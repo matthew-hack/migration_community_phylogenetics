@@ -1,0 +1,1700 @@
+#manuscript_analyses_redo.R
+
+
+library(ebirdst)
+library(terra)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(rnaturalearth)
+library(geodata)
+library(ggplot2)
+library(fields)
+library(stringr)
+library(TreeTools)
+library(viridis)
+#library(rgdal)
+library(raster)
+library(devtools)
+#devtools::install_github("ropensci/rnaturalearthhires")
+extract <- terra::extract
+project <- terra::project #possible source of conf <- ion regarding rgdal for later
+
+# Pure intro stuff
+
+# download a simplified example dataset for Yellow-bellied Sapsucker in Michigan
+path <- ebirdst_download(species = "example_data")
+
+# for non-example data use the species code or name instead of "example_data"
+path <- get_species_path("example_data")
+
+occ_lr <- load_raster(path, product = "occurrence", resolution = "lr")
+occ_lr
+
+parse_raster_dates(occ_lr)
+
+# weekly, low res, abundance confidence intervals
+abd_lower <- load_raster(path, product = "abundance", metric = "lower", 
+                         resolution = "lr")
+abd_upper <- load_raster(path, product = "abundance", metric = "upper", 
+                         resolution = "lr")
+
+
+# seasonal, low res, mean relative abundance
+abd_seasonal_mean <- load_raster(path, product = "abundance", 
+                                 period = "seasonal", metric = "mean", 
+                                 resolution = "lr")
+
+# season that each layer corresponds to
+names(abd_seasonal_mean)
+
+# just the breeding season layer
+abd_seasonal_mean[["breeding"]]
+
+# seasonal, low res, max occurrence
+occ_seasonal_max <- load_raster(path, product = "occurrence", 
+                                period = "seasonal", metric = "max", 
+                                resolution = "lr")
+
+# full year, low res, maximum relative abundance
+abd_fy_max <- load_raster(path, product = "abundance", 
+                          period = "full-year", metric = "max", 
+                          resolution = "lr")
+
+
+# Working with rasters module
+
+# load seasonal mean relative abundance at low res
+abd_seasonal <- load_raster(path, 
+                            product = "abundance", 
+                            period = "seasonal",
+                            metric = "mean",
+                            resolution = "lr")
+
+abd_breeding <- abd_seasonal[["breeding"]]
+
+# boundary polygon for michigan
+mi <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
+  filter(postal == "MI") %>% 
+  # project to same coordinate reference system as the raster data
+  st_transform(st_crs(abd_seasonal))
+
+# crop data to michigan
+abd_breeding_mi <- crop(abd_breeding, mi)
+
+# load the mapping parameters
+fac_parameters <- load_fac_map_parameters(path)
+crs <- fac_parameters$custom_projection
+
+# transform to the custom projection using nearest neighbor resampling
+abd_projected <- project(abd_breeding_mi, crs, method = "near")
+
+# quantiles of non-zero values
+v <- values(abd_projected)
+v <- v[!is.na(v) & v > 0]
+bins <- quantile(v, seq(0, 1, by = 0.1))
+# add a bin for 0
+bins <- c(0, bins)
+
+# status and trends palette
+pal <- abundance_palette(length(bins) - 2)
+# add a color for zero
+pal <- c("#e6e6e6", pal)
+
+# natural earth boundaries
+countries <- ne_countries(returnclass = "sf") %>% 
+  st_geometry() %>% 
+  st_transform(crs)
+states <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
+  st_geometry() %>% 
+  st_transform(crs)
+
+
+# define the map extent with the michigan polygon
+mi_ext <- mi %>% 
+  st_geometry() %>% 
+  st_transform(crs)
+
+labels <- quantile(bins, c(0, 0.5, 1))
+label_breaks <- seq(0, 1, length.out = length(bins))
+
+abd_median <- load_raster(path, product = "abundance", 
+                          metric = "median", resolution = "lr")
+abd_lower <- load_raster(path, product = "abundance",
+                         metric = "lower", resolution = "lr")
+abd_upper <- load_raster(path, product = "abundance", 
+                         metric = "upper", resolution = "lr")
+
+# download list of passerines
+
+species_codes <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
+                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
+                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
+                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
+                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
+                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
+                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
+                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
+                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
+                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
+                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
+                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
+                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
+                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
+                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
+                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
+                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
+                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
+                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
+                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
+                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
+                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
+                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
+                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
+                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
+                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
+                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
+                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
+                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
+                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
+                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
+                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
+                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
+                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
+                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
+                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
+                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
+                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
+
+# "whcsee1", "blueth
+
+species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
+                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
+                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
+                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
+                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
+                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
+                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
+                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
+                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
+                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
+                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
+                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
+                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
+                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
+                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
+                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
+                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
+                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
+                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
+                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
+                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
+                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
+                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
+                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
+                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
+                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
+                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
+                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
+                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
+                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
+                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
+                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
+                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
+                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
+                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
+                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
+                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
+                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
+
+#, "whcsee1"
+
+#download data for each species
+
+#for(i in 1:length(species_codes)){
+#  str_sub(species_codes[i]) <- ebirdst_download(species = species_codes[i])
+#}
+
+#create passerine abd seasonal mean files
+
+#for(i in 1:length(species_names)){
+#  assign(paste0(species_names[i], "_path"), get_species_path(species_names[i]))
+#}
+
+#load_raster(paste0("data/ebirdst/2021/", species_names[1]), product = "abundance",
+#            period = "seasonal", metric = "mean", 
+#            resolution = "hr")
+
+#for(i in 1:length(species_names)){
+#  assign(paste0(species_names[i], "_abd_seasonal_mean"), load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", 
+#                                                                     period = "seasonal", metric = "mean", 
+#                                                                     resolution = "hr"))
+#}
+
+#see if you can get a tree working
+
+# Check for needed packages, and install the missing ones
+required.libraries <- c("ape", "picante", 
+                        "pez", "phytools",
+                        "vegan", "adephylo", 
+                        "phylobase", "geiger", 
+                        "mvMORPH", "OUwie", 
+                        "hisse", "BAMMtools",
+                        "phylosignal", "Biostrings",
+                        "devtools","ggplot2", 
+                        "kableExtra", "betapart", "gridExtra",
+                        "reshape2")
+
+# Load all required libraries at once
+lapply(required.libraries, require, character.only = TRUE)
+
+#load in the tree
+tree.passerine <- read.nexus("phylogeny_data/jetz_passerine_tree/jetz_consensus_tree.tre")
+tree.passerine <- root(tree.passerine, outgroup = c(263:297))
+
+
+species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_cooperi",
+                        "Contopus_pertinax", "Contopus_sordidulus", "Contopus_virens",
+                        "Empidonax_flaviventris", "Empidonax_virescens", "Empidonax_alnorum",
+                        "Empidonax_traillii", "Empidonax_minimus", "Empidonax_hammondii",
+                        "Empidonax_wrightii", "Empidonax_oberholseri", "Empidonax_difficilis",
+                        "Empidonax_occidentalis", "Empidonax_fulvifrons", "Sayornis_nigricans",
+                        "Sayornis_phoebe", "Sayornis_saya", "Pyrocephalus_rubinus",
+                        "Myiarchus_tuberculifer", "Myiarchus_cinerascens", "Myiarchus_crinitus",
+                        "Myiarchus_tyrannulus", "Pitangus_sulphuratus", "Myiodynastes_luteiventris",
+                        "Tyrannus_melancholicus", "Tyrannus_couchii", "Tyrannus_vociferans",
+                        "Tyrannus_crassirostris", "Tyrannus_verticalis", "Tyrannus_tyrannus",
+                        "Tyrannus_dominicensis", "Tyrannus_forficatus", "Vireo_atricapilla",
+                        "Vireo_griseus", "Vireo_bellii", "Vireo_vicinior",
+                        "Vireo_huttoni", "Vireo_flavifrons", "Vireo_cassinii",
+                        "Vireo_solitarius", "Vireo_plumbeus", "Vireo_philadelphicus",
+                        "Vireo_gilvus", "Vireo_olivaceus", "Vireo_altiloquus",
+                        "Lanius_ludovicianus", "Perisoreus_canadensis", "Cyanocorax_morio",
+                        "Cyanocorax_yncas", "Gymnorhinus_cyanocephalus", "Cyanocitta_stelleri",
+                        "Cyanocitta_cristata", "Aphelocoma_coerulescens", "Aphelocoma_insularis",
+                        "Aphelocoma_californica", "Pica_hudsonia", "Pica_nuttalli",
+                        "Nucifraga_columbiana", "Corvus_brachyrhynchos", "Corvus_ossifragus", 
+                        "Corvus_cryptoleucus", "Corvus_corax", "Parus_carolinensis", 
+                        "Parus_atricapillus", "Parus_gambeli", "Parus_sclateri", 
+                        "Parus_rufescens", "Parus_hudsonicus", "Parus_cinctus", 
+                        "Baeolophus_wollweberi", "Baeolophus_inornatus", "Baeolophus_ridgwayi",
+                        "Baeolophus_bicolor", "Baeolophus_atricristatus", "Auriparus_flaviceps", 
+                        "Eremophila_alpestris", "Stelgidopteryx_serripennis", "Progne_subis",
+                        "Tachycineta_bicolor", "Tachycineta_thalassina", "Riparia_riparia",
+                        "Petrochelidon_pyrrhonota", "Petrochelidon_fulva", "Pycnonotus_jocosus", 
+                        "Phylloscopus_borealis", "Psaltriparus_minimus", "Chamaea_fasciata",
+                        "Regulus_calendula", "Regulus_satrapa", "Sitta_canadensis",
+                        "Sitta_carolinensis", "Sitta_pygmaea", "Sitta_pusilla",
+                        "Certhia_americana", "Polioptila_caerulea", "Polioptila_melanura",
+                        "Polioptila_californica", "Polioptila_nigriceps", "Salpinctes_obsoletus",
+                        "Catherpes_mexicanus", "Troglodytes_aedon", "Troglodytes_troglodytes",
+                        "Cistothorus_palustris", "Thryothorus_ludovicianus", "Thryomanes_bewickii",
+                        "Campylorhynchus_brunneicapillus", "Cinclus_mexicanus", "Sturnus_vulgaris",
+                        "Acridotheres_tristis", "Dumetella_carolinensis", "Toxostoma_curvirostre",
+                        "Toxostoma_rufum", "Toxostoma_longirostre", "Toxostoma_bendirei",
+                        "Toxostoma_redivivum", "Toxostoma_lecontei", "Toxostoma_crissale",
+                        "Oreoscoptes_montanus", "Mimus_polyglottos", "Sialia_sialis",
+                        "Sialia_mexicana", "Sialia_currucoides", "Myadestes_townsendi",
+                        "Catharus_fuscescens", "Catharus_minimus", "Catharus_bicknelli",
+                        "Catharus_ustulatus", "Catharus_guttatus", "Hylocichla_mustelina",
+                        "Turdus_grayi", "Turdus_migratorius",
+                        "Oenanthe_oenanthe", "Bombycilla_garrulus", "Bombycilla_cedrorum",
+                        "Phainopepla_nitens", "Peucedramus_taeniatus","Euplectes_franciscanus",
+                        "Lonchura_punctulata", "Passer_domesticus", "Passer_montanus",
+                        "Motacilla_flava", "Anthus_rubescens", "Anthus_spragueii",
+                        "Coccothraustes_vespertinus", "Pinicola_enucleator", "Leucosticte_tephrocotis",
+                        "Leucosticte_atrata", "Leucosticte_australis", "Carpodacus_mexicanus",
+                        "Carpodacus_purpureus", "Carpodacus_cassinii", "Carduelis_flammea",
+                        "Carduelis_hornemanni", "Loxia_curvirostra", "Loxia_leucoptera",
+                        "Carduelis_pinus", "Carduelis_psaltria", "Carduelis_lawrencei",
+                        "Carduelis_tristis", "Calcarius_lapponicus", "Calcarius_ornatus",
+                        "Calcarius_pictus", "Calcarius_mccownii", "Plectrophenax_nivalis",
+                        "Plectrophenax_hyperboreus","Aimophila_carpalis", "Aimophila_botterii",
+                        "Aimophila_cassinii", "Aimophila_aestivalis", "Ammodramus_savannarum",
+                        "Arremonops_rufivirgatus", "Spizella_passerina", "Spizella_pallida",
+                        "Spizella_atrogularis", "Spizella_pusilla", "Spizella_breweri",
+                        "Aimophila_quinquestriata", "Amphispiza_bilineata", "Chondestes_grammacus",
+                        "Calamospiza_melanocorys", "Spizella_arborea", "Passerella_iliaca",
+                        "Junco_hyemalis", "Junco_phaeonotus", "Zonotrichia_leucophrys",
+                        "Zonotrichia_atricapilla", "Zonotrichia_querula", "Zonotrichia_albicollis",
+                        "Amphispiza_belli", "Pooecetes_gramineus", "Ammodramus_leconteii",
+                        "Ammodramus_maritimus", "Ammodramus_nelsoni", "Ammodramus_caudacutus",
+                        "Passerculus_sandwichensis", "Ammodramus_bairdii", "Ammodramus_henslowii",
+                        "Melospiza_melodia", "Melospiza_lincolnii", "Melospiza_georgiana",
+                        "Pipilo_fuscus", "Pipilo_aberti", "Pipilo_crissalis",
+                        "Aimophila_ruficeps", "Pipilo_chlorurus", "Pipilo_maculatus",
+                        "Pipilo_erythrophthalmus", "Icteria_virens", "Xanthocephalus_xanthocephalus",
+                        "Dolichonyx_oryzivorus", "Sturnella_neglecta", "Sturnella_magna",
+                        "Icterus_spurius", "Icterus_cucullatus", "Icterus_bullockii",
+                        "Icterus_pectoralis", "Icterus_gularis", "Icterus_graduacauda",
+                        "Icterus_galbula", "Icterus_parisorum", "Agelaius_phoeniceus",
+                        "Agelaius_tricolor", "Molothrus_bonariensis", "Molothrus_aeneus",
+                        "Molothrus_ater", "Euphagus_carolinus", "Euphagus_cyanocephalus",
+                        "Quiscalus_quiscula", "Quiscalus_major", "Quiscalus_mexicanus",
+                        "Seiurus_aurocapilla", "Helmitheros_vermivorum", "Seiurus_motacilla",
+                        "Seiurus_noveboracensis", "Vermivora_chrysoptera", "Mniotilta_varia",
+                        "Protonotaria_citrea", "Limnothlypis_swainsonii", "Vermivora_peregrina",
+                        "Vermivora_celata", "Vermivora_crissalis", "Vermivora_luciae",
+                        "Vermivora_ruficapilla", "Vermivora_virginiae", "Oporornis_agilis",
+                        "Oporornis_tolmiei", "Oporornis_philadelphia", "Oporornis_formosus",
+                        "Geothlypis_trichas", "Wilsonia_citrina", "Setophaga_ruticilla",
+                        "Dendroica_kirtlandii", "Dendroica_tigrina", "Dendroica_cerulea",
+                        "Parula_americana", "Parula_pitiayumi", "Dendroica_magnolia",
+                        "Dendroica_castanea", "Dendroica_fusca", "Dendroica_petechia",
+                        "Dendroica_pensylvanica", "Dendroica_striata", "Dendroica_caerulescens",
+                        "Dendroica_palmarum", "Dendroica_pinus", "Dendroica_coronata",
+                        "Dendroica_dominica", "Dendroica_discolor", "Dendroica_graciae",
+                        "Dendroica_nigrescens", "Dendroica_townsendi", "Dendroica_occidentalis",
+                        "Dendroica_chrysoparia", "Dendroica_virens", "Wilsonia_canadensis",
+                        "Wilsonia_pusilla", "Cardellina_rubrifrons", "Myioborus_pictus",
+                        "Piranga_flava", "Piranga_rubra", "Piranga_olivacea",
+                        "Piranga_ludoviciana", "Cardinalis_cardinalis", "Cardinalis_sinuatus",
+                        "Pheucticus_ludovicianus", "Pheucticus_melanocephalus", "Passerina_caerulea",
+                        "Passerina_amoena", "Passerina_cyanea", "Passerina_versicolor",
+                        "Passerina_ciris", "Spiza_americana")
+#, "Sporophila_torqueola", "Luscinia svecica"
+
+passerine.tree <- drop.tip(tree.passerine,tree.passerine$tip.label[-match(species_passerines, tree.passerine$tip.label)])
+
+#now try to get to individual weeks for each warbler (wrap)
+#this gets me to a specific week (0608)
+
+
+ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
+                                         period = "seasonal", metric = "mean", 
+                                         resolution = "hr")
+
+us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
+  st_transform(st_crs(ovenbi1_abd_seasonal_mean))
+
+
+
+###### analyses start here
+#read in csvs of NRIs and NTIs redos 
+
+### add migratory proportion to data frames
+#load migratory proportion
+# migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
+# migratory_proportion_df_week_26 <- read.csv("output/community_data/migratory_proportion_week_26.csv")
+# 
+# #add proportion to each dataframe
+# combined_week_1_nri$proportion <- rep(NA, nrow(combined_week_1_nri))
+# combined_week_1_NTI$proportion <- rep(NA, nrow(combined_week_1_NTI))
+# combined_week_26_nri$proportion <- rep(NA, nrow(combined_week_26_nri))
+# combined_week_26_NTI$proportion <- rep(NA, nrow(combined_week_26_NTI))
+# 
+# #separately because there are a few rows in week 1 that are not in week 26
+# 
+# for(i in 1:nrow(combined_week_1_nri)){ 
+#   combined_week_1_nri[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == combined_week_1_nri[i,"community"],"proportion"]
+#   combined_week_1_NTI[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == combined_week_1_NTI[i,"community"],"proportion"]
+# }
+# 
+# for(i in 1:nrow(combined_week_26_nri)){ 
+#   combined_week_26_nri[i,"proportion"] <- migratory_proportion_df_week_26[migratory_proportion_df_week_26$community == combined_week_26_nri[i,"community"],"proportion"]
+#   combined_week_26_NTI[i,"proportion"] <- migratory_proportion_df_week_26[migratory_proportion_df_week_26$community == combined_week_26_NTI[i,"community"],"proportion"]
+# }
+# 
+# #### convert x and y values to lat and long
+# 
+# combined_week_1_nri$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_nri[,c("x","y")])[,2]
+# combined_week_1_nri$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_nri[,c("x","y")])[,1]
+# combined_week_1_NTI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_NTI[,c("x","y")])[,2]
+# combined_week_1_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_NTI[,c("x","y")])[,1]
+# combined_week_26_nri$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_nri[,c("x","y")])[,2]
+# combined_week_26_nri$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_nri[,c("x","y")])[,1]
+# combined_week_26_NTI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,2]
+# combined_week_26_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,1]
+
+
+##### redo c-score analyses
+# library(EcoSimR)
+# library(ecospat)
+# ##### create a histogram with distributions of phylogenetic distance means across all BCRs
+# for(i in 5:37){
+#   assign(paste0("bcr_", i, "_week_26"), read.csv(paste0("output/bcr_community_data/26/community_26_bcr_", i, ".csv")))
+# } #takes about an hour
+# 
+# for(i in 5:37){
+#   assign(paste0("bcr_", i, "_week_1"), read.csv(paste0("output/bcr_community_data/1/community_1_bcr_", i, ".csv")))
+# } #takes about an hour
+# 
+# bcr_week_26_list <- list(bcr_5_week_26, bcr_6_week_26, bcr_7_week_26, bcr_8_week_26, bcr_9_week_26, bcr_10_week_26,
+#                          bcr_11_week_26, bcr_12_week_26, bcr_13_week_26, bcr_14_week_26, bcr_15_week_26, bcr_16_week_26,
+#                          bcr_17_week_26, bcr_18_week_26, bcr_19_week_26, bcr_20_week_26, bcr_21_week_26, bcr_22_week_26,
+#                          bcr_23_week_26, bcr_24_week_26, bcr_25_week_26, bcr_26_week_26, bcr_27_week_26, bcr_28_week_26,
+#                          bcr_29_week_26, bcr_30_week_26, bcr_31_week_26, bcr_32_week_26, bcr_33_week_26, bcr_34_week_26,
+#                          bcr_35_week_26, bcr_36_week_26, bcr_37_week_26)
+# 
+# #generate c scores for everyone at low frequencies so that we can generate phy distances
+# for(i in 5:37){
+#   df <- as.data.frame(bcr_week_26_list[i-4])
+#   df <- df[sample(nrow(df), nrow(df)/100, replace=FALSE),]
+#   ecospot <- ecospat.Cscore(df, 2, outpath="output/tables")
+#   assign(paste0("c_scores_bcr_", i, "_week_26"), read.delim("output/tables/Cscores.txt"))
+# }
+# 
+# #make a list of the c score matrices
+# c_scores_bcr_week_26_list <- list(c_scores_bcr_5_week_26, c_scores_bcr_6_week_26, c_scores_bcr_7_week_26, c_scores_bcr_8_week_26, c_scores_bcr_9_week_26, c_scores_bcr_10_week_26,
+#                                   c_scores_bcr_11_week_26, c_scores_bcr_12_week_26, c_scores_bcr_13_week_26, c_scores_bcr_14_week_26, c_scores_bcr_15_week_26, c_scores_bcr_16_week_26,
+#                                   c_scores_bcr_17_week_26, c_scores_bcr_18_week_26, c_scores_bcr_19_week_26, c_scores_bcr_20_week_26, c_scores_bcr_21_week_26, c_scores_bcr_22_week_26,
+#                                   c_scores_bcr_23_week_26, c_scores_bcr_24_week_26, c_scores_bcr_25_week_26, c_scores_bcr_26_week_26, c_scores_bcr_27_week_26, c_scores_bcr_28_week_26,
+#                                   c_scores_bcr_29_week_26, c_scores_bcr_30_week_26, c_scores_bcr_31_week_26, c_scores_bcr_32_week_26, c_scores_bcr_33_week_26, c_scores_bcr_34_week_26,
+#                                   c_scores_bcr_35_week_26, c_scores_bcr_36_week_26, c_scores_bcr_37_week_26)
+# 
+# #match phylogenies for each area
+# 
+# # Create a Phylogenetic Distance Matrix
+# 
+# #generate phylogeny matches
+# for(i in 5:37){
+#   assign(paste0("passerine.picCleanTree.bcr", i, "week26"), match.phylo.comm(phy = passerine.tree,
+#                                                                              comm = as.data.frame(bcr_week_26_list[i-4]))$phy)
+#   assign(paste0("passerine.picCleanComm.bcr", i, "week26"), match.phylo.comm(phy = passerine.tree,
+#                                                                              comm = as.data.frame(bcr_week_26_list[i-4]))$comm)
+# }
+# 
+# #make a list of those matches
+# passerine.picCleanTree.bcrweek_26_list <- list(passerine.picCleanTree.bcr5week26, passerine.picCleanTree.bcr6week26, passerine.picCleanTree.bcr7week26, passerine.picCleanTree.bcr8week26, passerine.picCleanTree.bcr9week26, passerine.picCleanTree.bcr10week26,
+#                                                passerine.picCleanTree.bcr11week26, passerine.picCleanTree.bcr12week26, passerine.picCleanTree.bcr13week26, passerine.picCleanTree.bcr14week26, passerine.picCleanTree.bcr15week26, passerine.picCleanTree.bcr16week26,
+#                                                passerine.picCleanTree.bcr17week26, passerine.picCleanTree.bcr18week26, passerine.picCleanTree.bcr19week26, passerine.picCleanTree.bcr20week26, passerine.picCleanTree.bcr21week26, passerine.picCleanTree.bcr22week26,
+#                                                passerine.picCleanTree.bcr23week26, passerine.picCleanTree.bcr24week26, passerine.picCleanTree.bcr25week26, passerine.picCleanTree.bcr26week26, passerine.picCleanTree.bcr27week26, passerine.picCleanTree.bcr28week26,
+#                                                passerine.picCleanTree.bcr29week26, passerine.picCleanTree.bcr30week26, passerine.picCleanTree.bcr31week26, passerine.picCleanTree.bcr32week26, passerine.picCleanTree.bcr33week26, passerine.picCleanTree.bcr34week26,
+#                                                passerine.picCleanTree.bcr35week26, passerine.picCleanTree.bcr36week26, passerine.picCleanTree.bcr37week26)
+# 
+# # create phylogenetic distance matrices and make a list of those matrices
+# for(i in 5:37){
+#   assign(paste0("passerine.cophenDist.bcr", i, "week26"), cophenetic.phylo(passerine.picCleanTree.bcrweek_26_list[[i-4]]))
+# }
+# 
+# passerine.cophenDist.week26_list <- list(passerine.cophenDist.bcr5week26, passerine.cophenDist.bcr6week26, passerine.cophenDist.bcr7week26, passerine.cophenDist.bcr8week26, passerine.cophenDist.bcr9week26, passerine.cophenDist.bcr10week26,
+#                                          passerine.cophenDist.bcr11week26, passerine.cophenDist.bcr12week26, passerine.cophenDist.bcr13week26, passerine.cophenDist.bcr14week26, passerine.cophenDist.bcr15week26, passerine.cophenDist.bcr16week26,
+#                                          passerine.cophenDist.bcr17week26, passerine.cophenDist.bcr18week26, passerine.cophenDist.bcr19week26, passerine.cophenDist.bcr20week26, passerine.cophenDist.bcr21week26, passerine.cophenDist.bcr22week26,
+#                                          passerine.cophenDist.bcr23week26, passerine.cophenDist.bcr24week26, passerine.cophenDist.bcr25week26, passerine.cophenDist.bcr26week26, passerine.cophenDist.bcr27week26, passerine.cophenDist.bcr28week26,
+#                                          passerine.cophenDist.bcr29week26, passerine.cophenDist.bcr30week26, passerine.cophenDist.bcr31week26, passerine.cophenDist.bcr32week26, passerine.cophenDist.bcr33week26, passerine.cophenDist.bcr34week26,
+#                                          passerine.cophenDist.bcr35week26, passerine.cophenDist.bcr36week26, passerine.cophenDist.bcr37week26)
+# 
+# #add phylogenetic distances to each of the c score matrices
+# for(i in 5:37){
+#   c_scores_bcr_week_26_list[[i-4]]$phylogenetic_distance <- rep(NA, nrow(c_scores_bcr_week_26_list[[i-4]]))
+#   for(j in 1:nrow(c_scores_bcr_week_26_list[[i-4]])){
+#     c_scores_bcr_week_26_list[[i-4]][j, "phylogenetic_distance"] <- passerine.cophenDist.week26_list[[i-4]][c_scores_bcr_week_26_list[[i-4]][j,"Sp1"],
+#                                                                                                             c_scores_bcr_week_26_list[[i-4]][j,"Sp2"]]
+#   }
+# }
+# 
+# #make a vector of mean NRI value within each BCR
+# week_26_mean_NRI_values <- rep(NA, length(c_scores_bcr_week_26_list))
+# for(i in 1:length(c_scores_bcr_week_26_list)){
+#   week_26_mean_NRI_values[i] <- mean(c_scores_bcr_week_26_list[[i]]$phylogenetic_distance)
+# }
+# 
+# #calculate nearest neighbors for each matrix
+# #generate species lists
+# for(i in 5:37){
+#   assign(paste0("bcr", i, "week26_species"), colnames(bcr_week_26_list[[i-4]]))
+# }
+# 
+# #generate list of species lists
+# week26_species_lists <- list(bcr5week26_species, bcr6week26_species, bcr7week26_species, bcr8week26_species, bcr9week26_species, bcr10week26_species,
+#                              bcr11week26_species, bcr12week26_species, bcr13week26_species, bcr14week26_species, bcr15week26_species, bcr16week26_species,
+#                              bcr17week26_species, bcr18week26_species, bcr19week26_species, bcr20week26_species, bcr21week26_species, bcr22week26_species,
+#                              bcr23week26_species, bcr24week26_species, bcr25week26_species, bcr26week26_species, bcr27week26_species, bcr28week26_species,
+#                              bcr29week26_species, bcr30week26_species, bcr31week26_species, bcr32week26_species, bcr33week26_species, bcr34week26_species,
+#                              bcr35week26_species, bcr36week26_species, bcr37week26_species)
+# 
+# #generate phy_distances matrices
+# for(i in 5:37){
+#   assign(paste0("bcr", i, "week26_min_phy_distances"), rep(NA, length(week26_species_lists[[i-4]])))
+# }
+# 
+# #generate list of phy_distance matrices
+# week26_min_phy_distances_lists <- list(bcr5week26_min_phy_distances, bcr6week26_min_phy_distances, bcr7week26_min_phy_distances, bcr8week26_min_phy_distances, bcr9week26_min_phy_distances, bcr10week26_min_phy_distances,
+#                                        bcr11week26_min_phy_distances, bcr12week26_min_phy_distances, bcr13week26_min_phy_distances, bcr14week26_min_phy_distances, bcr15week26_min_phy_distances, bcr16week26_min_phy_distances,
+#                                        bcr17week26_min_phy_distances, bcr18week26_min_phy_distances, bcr19week26_min_phy_distances, bcr20week26_min_phy_distances, bcr21week26_min_phy_distances, bcr22week26_min_phy_distances,
+#                                        bcr23week26_min_phy_distances, bcr24week26_min_phy_distances, bcr25week26_min_phy_distances, bcr26week26_min_phy_distances, bcr27week26_min_phy_distances, bcr28week26_min_phy_distances,
+#                                        bcr29week26_min_phy_distances, bcr30week26_min_phy_distances, bcr31week26_min_phy_distances, bcr32week26_min_phy_distances, bcr33week26_min_phy_distances, bcr34week26_min_phy_distances,
+#                                        bcr35week26_min_phy_distances, bcr36week26_min_phy_distances, bcr37week26_min_phy_distances)
+# 
+# #populate min phy distance matrices
+# for(i in 5:37){
+#   for(j in 1:length(week26_min_phy_distances_lists[[i-4]])){
+#     week26_min_phy_distances_lists[[i-4]][j] <- min(c_scores_bcr_week_26_list[[i-4]][c_scores_bcr_week_26_list[[i-4]]$Sp1 == week26_species_lists[[i-4]][j] |
+#                                                                                        c_scores_bcr_week_26_list[[i-4]]$Sp2 == week26_species_lists[[i-4]][j],
+#                                                                                      "phylogenetic_distance"])
+#   }
+# }
+# 
+# #make a vector of mean NTI value within each BCR
+# week_26_mean_NTI_values <- rep(NA, length(c_scores_bcr_week_26_list))
+# for(i in 1:length(c_scores_bcr_week_26_list)){
+#   week_26_mean_NTI_values[i] <- mean(week26_min_phy_distances_lists[[i]])
+# }
+# 
+# #initial histogram of mean NRI and NTI values within each BCR
+# hist(week_26_mean_NRI_values, freq=FALSE, col=rgb(0,0,1,1/2), 
+#      xlim=c(0, max(week_26_mean_NRI_values)), ylim=c(0,.25), main="BCR Mean Phylogenetic Distances for NTI & NRI Week 26",
+#      xlab="Phylogenetic Distance", breaks=10)
+# hist(week_26_mean_NTI_values, freq=FALSE, 
+#      breaks=5, col=rgb(1,0,0,1/2), add=TRUE)
+# abline(v=mean(week_26_mean_NRI_values), col="blue", lwd=2)
+# abline(v=mean(week_26_mean_NTI_values), col="red", lwd=2)
+# 
+# 
+# #### replicate process for week 1
+# bcr_week_1_list <- list(bcr_5_week_1, bcr_6_week_1, bcr_7_week_1, bcr_8_week_1, bcr_9_week_1, bcr_10_week_1,
+#                         bcr_11_week_1, bcr_12_week_1, bcr_13_week_1, bcr_14_week_1, bcr_15_week_1, bcr_16_week_1,
+#                         bcr_17_week_1, bcr_18_week_1, bcr_19_week_1, bcr_20_week_1, bcr_21_week_1, bcr_22_week_1,
+#                         bcr_23_week_1, bcr_24_week_1, bcr_25_week_1, bcr_26_week_1, bcr_27_week_1, bcr_28_week_1,
+#                         bcr_29_week_1, bcr_30_week_1, bcr_31_week_1, bcr_32_week_1, bcr_33_week_1, bcr_34_week_1,
+#                         bcr_35_week_1, bcr_36_week_1, bcr_37_week_1)
+# 
+# #generate c scores for everyone at low frequencies so that we can generate phy distances
+# for(i in 5:37){
+#   df <- as.data.frame(bcr_week_1_list[i-4])
+#   df <- df[sample(nrow(df), nrow(df)/100, replace=FALSE),]
+#   ecospot <- ecospat.Cscore(df, 2, outpath="output/tables")
+#   assign(paste0("c_scores_bcr_", i, "_week_1"), read.delim("output/tables/Cscores.txt"))
+# }
+# 
+# #make a list of the c score matrices
+# c_scores_bcr_week_1_list <- list(c_scores_bcr_5_week_1, c_scores_bcr_6_week_1, c_scores_bcr_7_week_1, c_scores_bcr_8_week_1, c_scores_bcr_9_week_1, c_scores_bcr_10_week_1,
+#                                  c_scores_bcr_11_week_1, c_scores_bcr_12_week_1, c_scores_bcr_13_week_1, c_scores_bcr_14_week_1, c_scores_bcr_15_week_1, c_scores_bcr_16_week_1,
+#                                  c_scores_bcr_17_week_1, c_scores_bcr_18_week_1, c_scores_bcr_19_week_1, c_scores_bcr_20_week_1, c_scores_bcr_21_week_1, c_scores_bcr_22_week_1,
+#                                  c_scores_bcr_23_week_1, c_scores_bcr_24_week_1, c_scores_bcr_25_week_1, c_scores_bcr_26_week_1, c_scores_bcr_27_week_1, c_scores_bcr_28_week_1,
+#                                  c_scores_bcr_29_week_1, c_scores_bcr_30_week_1, c_scores_bcr_31_week_1, c_scores_bcr_32_week_1, c_scores_bcr_33_week_1, c_scores_bcr_34_week_1,
+#                                  c_scores_bcr_35_week_1, c_scores_bcr_36_week_1, c_scores_bcr_37_week_1)
+# 
+# #match phylogenies for each area
+# 
+# # Create a Phylogenetic Distance Matrix
+# 
+# #generate phylogeny matches
+# for(i in 5:37){
+#   assign(paste0("passerine.picCleanTree.bcr", i, "week1"), match.phylo.comm(phy = passerine.tree,
+#                                                                             comm = as.data.frame(bcr_week_1_list[i-4]))$phy)
+#   assign(paste0("passerine.picCleanComm.bcr", i, "week1"), match.phylo.comm(phy = passerine.tree,
+#                                                                             comm = as.data.frame(bcr_week_1_list[i-4]))$comm)
+# }
+# 
+# #make a list of those matches
+# passerine.picCleanTree.bcrweek_1_list <- list(passerine.picCleanTree.bcr5week1, passerine.picCleanTree.bcr6week1, passerine.picCleanTree.bcr7week1, passerine.picCleanTree.bcr8week1, passerine.picCleanTree.bcr9week1, passerine.picCleanTree.bcr10week1,
+#                                               passerine.picCleanTree.bcr11week1, passerine.picCleanTree.bcr12week1, passerine.picCleanTree.bcr13week1, passerine.picCleanTree.bcr14week1, passerine.picCleanTree.bcr15week1, passerine.picCleanTree.bcr16week1,
+#                                               passerine.picCleanTree.bcr17week1, passerine.picCleanTree.bcr18week1, passerine.picCleanTree.bcr19week1, passerine.picCleanTree.bcr20week1, passerine.picCleanTree.bcr21week1, passerine.picCleanTree.bcr22week1,
+#                                               passerine.picCleanTree.bcr23week1, passerine.picCleanTree.bcr24week1, passerine.picCleanTree.bcr25week1, passerine.picCleanTree.bcr26week1, passerine.picCleanTree.bcr27week1, passerine.picCleanTree.bcr28week1,
+#                                               passerine.picCleanTree.bcr29week1, passerine.picCleanTree.bcr30week1, passerine.picCleanTree.bcr31week1, passerine.picCleanTree.bcr32week1, passerine.picCleanTree.bcr33week1, passerine.picCleanTree.bcr34week1,
+#                                               passerine.picCleanTree.bcr35week1, passerine.picCleanTree.bcr36week1, passerine.picCleanTree.bcr37week1)
+# 
+# # create phylogenetic distance matrices and make a list of those matrices
+# for(i in 5:37){
+#   assign(paste0("passerine.cophenDist.bcr", i, "week1"), cophenetic.phylo(passerine.picCleanTree.bcrweek_1_list[[i-4]]))
+# }
+# 
+# passerine.cophenDist.week1_list <- list(passerine.cophenDist.bcr5week1, passerine.cophenDist.bcr6week1, passerine.cophenDist.bcr7week1, passerine.cophenDist.bcr8week1, passerine.cophenDist.bcr9week1, passerine.cophenDist.bcr10week1,
+#                                         passerine.cophenDist.bcr11week1, passerine.cophenDist.bcr12week1, passerine.cophenDist.bcr13week1, passerine.cophenDist.bcr14week1, passerine.cophenDist.bcr15week1, passerine.cophenDist.bcr16week1,
+#                                         passerine.cophenDist.bcr17week1, passerine.cophenDist.bcr18week1, passerine.cophenDist.bcr19week1, passerine.cophenDist.bcr20week1, passerine.cophenDist.bcr21week1, passerine.cophenDist.bcr22week1,
+#                                         passerine.cophenDist.bcr23week1, passerine.cophenDist.bcr24week1, passerine.cophenDist.bcr25week1, passerine.cophenDist.bcr26week1, passerine.cophenDist.bcr27week1, passerine.cophenDist.bcr28week1,
+#                                         passerine.cophenDist.bcr29week1, passerine.cophenDist.bcr30week1, passerine.cophenDist.bcr31week1, passerine.cophenDist.bcr32week1, passerine.cophenDist.bcr33week1, passerine.cophenDist.bcr34week1,
+#                                         passerine.cophenDist.bcr35week1, passerine.cophenDist.bcr36week1, passerine.cophenDist.bcr37week1)
+# 
+# #add phylogenetic distances to each of the c score matrices
+# for(i in 5:37){
+#   c_scores_bcr_week_1_list[[i-4]]$phylogenetic_distance <- rep(NA, nrow(c_scores_bcr_week_1_list[[i-4]]))
+#   for(j in 1:nrow(c_scores_bcr_week_1_list[[i-4]])){
+#     c_scores_bcr_week_1_list[[i-4]][j, "phylogenetic_distance"] <- passerine.cophenDist.week1_list[[i-4]][c_scores_bcr_week_1_list[[i-4]][j,"Sp1"],
+#                                                                                                           c_scores_bcr_week_1_list[[i-4]][j,"Sp2"]]
+#   }
+# }
+# 
+# #make a vector of mean NRI value within each BCR
+# week_1_mean_NRI_values <- rep(NA, length(c_scores_bcr_week_1_list))
+# for(i in 1:length(c_scores_bcr_week_1_list)){
+#   week_1_mean_NRI_values[i] <- mean(c_scores_bcr_week_1_list[[i]]$phylogenetic_distance)
+# }
+# 
+# #calculate nearest neighbors for each matrix
+# #generate species lists
+# for(i in 5:37){
+#   assign(paste0("bcr", i, "week1_species"), colnames(bcr_week_1_list[[i-4]]))
+# }
+# 
+# #generate list of species lists
+# week1_species_lists <- list(bcr5week1_species, bcr6week1_species, bcr7week1_species, bcr8week1_species, bcr9week1_species, bcr10week1_species,
+#                             bcr11week1_species, bcr12week1_species, bcr13week1_species, bcr14week1_species, bcr15week1_species, bcr16week1_species,
+#                             bcr17week1_species, bcr18week1_species, bcr19week1_species, bcr20week1_species, bcr21week1_species, bcr22week1_species,
+#                             bcr23week1_species, bcr24week1_species, bcr25week1_species, bcr26week1_species, bcr27week1_species, bcr28week1_species,
+#                             bcr29week1_species, bcr30week1_species, bcr31week1_species, bcr32week1_species, bcr33week1_species, bcr34week1_species,
+#                             bcr35week1_species, bcr36week1_species, bcr37week1_species)
+# 
+# #generate phy_distances matrices
+# for(i in 5:37){
+#   assign(paste0("bcr", i, "week1_min_phy_distances"), rep(NA, length(week1_species_lists[[i-4]])))
+# }
+# 
+# #generate list of phy_distance matrices
+# week1_min_phy_distances_lists <- list(bcr5week1_min_phy_distances, bcr6week1_min_phy_distances, bcr7week1_min_phy_distances, bcr8week1_min_phy_distances, bcr9week1_min_phy_distances, bcr10week1_min_phy_distances,
+#                                       bcr11week1_min_phy_distances, bcr12week1_min_phy_distances, bcr13week1_min_phy_distances, bcr14week1_min_phy_distances, bcr15week1_min_phy_distances, bcr16week1_min_phy_distances,
+#                                       bcr17week1_min_phy_distances, bcr18week1_min_phy_distances, bcr19week1_min_phy_distances, bcr20week1_min_phy_distances, bcr21week1_min_phy_distances, bcr22week1_min_phy_distances,
+#                                       bcr23week1_min_phy_distances, bcr24week1_min_phy_distances, bcr25week1_min_phy_distances, bcr26week1_min_phy_distances, bcr27week1_min_phy_distances, bcr28week1_min_phy_distances,
+#                                       bcr29week1_min_phy_distances, bcr30week1_min_phy_distances, bcr31week1_min_phy_distances, bcr32week1_min_phy_distances, bcr33week1_min_phy_distances, bcr34week1_min_phy_distances,
+#                                       bcr35week1_min_phy_distances, bcr36week1_min_phy_distances, bcr37week1_min_phy_distances)
+# 
+# #populate min phy distance matrices
+# for(i in 5:37){
+#   for(j in 1:length(week1_min_phy_distances_lists[[i-4]])){
+#     week1_min_phy_distances_lists[[i-4]][j] <- min(c_scores_bcr_week_1_list[[i-4]][c_scores_bcr_week_1_list[[i-4]]$Sp1 == week1_species_lists[[i-4]][j] |
+#                                                                                      c_scores_bcr_week_1_list[[i-4]]$Sp2 == week1_species_lists[[i-4]][j],
+#                                                                                    "phylogenetic_distance"])
+#   }
+# }
+# 
+# #make a vector of mean NTI value within each BCR
+# week_1_mean_NTI_values <- rep(NA, length(c_scores_bcr_week_1_list))
+# for(i in 1:length(c_scores_bcr_week_1_list)){
+#   week_1_mean_NTI_values[i] <- mean(week1_min_phy_distances_lists[[i]])
+# }
+# 
+# #initial histogram of mean NRI and NTI values within each BCR
+# hist(week_1_mean_NRI_values, freq=FALSE, col=rgb(0,0,1,1/2), 
+#      xlim=c(0, max(week_1_mean_NRI_values)), ylim=c(0,.25), main="BCR Mean Phylogenetic Distances for NTI & NRI Week 1",
+#      xlab="Phylogenetic Distance", breaks=10)
+# hist(week_1_mean_NTI_values, freq=FALSE, 
+#      breaks=5, col=rgb(1,0,0,1/2), add=TRUE)
+# abline(v=mean(week_1_mean_NRI_values), col="blue", lwd=2)
+# abline(v=mean(week_1_mean_NTI_values), col="red", lwd=2)
+# 
+# #### create nicer density plots for manuscript
+# #week 26
+# mean_NRI_NTI_hist_26 <- data.frame(matrix(NA, nrow = 2*length(week_26_mean_NRI_values), ncol = 2))
+# colnames(mean_NRI_NTI_hist_26) <- c("value", "type")
+# mean_NRI_NTI_hist_26[c(1:length(week_26_mean_NRI_values)), "value"] <- week_26_mean_NRI_values
+# mean_NRI_NTI_hist_26[c((length(week_26_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_26)), "value"] <- week_26_mean_NTI_values
+# mean_NRI_NTI_hist_26[c(1:length(week_26_mean_NRI_values)), "type"] <- "NRI"
+# mean_NRI_NTI_hist_26[c((length(week_26_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_26)), "type"] <- "NTI"
+# mean_NRI_NTI_hist_26
+# 
+# week26density <- ggplot(mean_NRI_NTI_hist_26, aes(x=value, group=type, fill=type)) +
+#   geom_density(alpha=0.67) +
+#   xlab("Phylogenetic Distance") +
+#   ylab("Density") + 
+#   xlim(0,100) +
+#   guides(fill=guide_legend(title="Metric")) +
+#   ggtitle("Week 26") +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_fill_manual(values=c("red","blue")) +
+#   theme(legend.position = "bottom", text = element_text(size = 25))
+# 
+# #week 1
+# mean_NRI_NTI_hist_1 <- data.frame(matrix(NA, nrow = 2*length(week_1_mean_NRI_values), ncol = 2))
+# colnames(mean_NRI_NTI_hist_1) <- c("value", "type")
+# mean_NRI_NTI_hist_1[c(1:length(week_1_mean_NRI_values)), "value"] <- week_1_mean_NRI_values
+# mean_NRI_NTI_hist_1[c((length(week_1_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_1)), "value"] <- week_1_mean_NTI_values
+# mean_NRI_NTI_hist_1[c(1:length(week_1_mean_NRI_values)), "type"] <- "NRI"
+# mean_NRI_NTI_hist_1[c((length(week_1_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_1)), "type"] <- "NTI"
+# mean_NRI_NTI_hist_1
+# 
+# week1density <- ggplot(mean_NRI_NTI_hist_1, aes(x=value, group=type, fill=type)) +
+#   geom_density(alpha=0.67) +
+#   xlab("Phylogenetic Distance") +
+#   ylab("Density") + 
+#   xlim(0,100) +
+#   guides(fill=guide_legend(title="Metric")) +
+#   ggtitle("Week 1") +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_fill_manual(values=c("red","blue")) +
+#   theme(legend.position = "bottom", text = element_text(size = 25))
+# 
+# #merge two dataframes
+# both_weeks_density <- dplyr::bind_rows(mean_NRI_NTI_hist_26, mean_NRI_NTI_hist_1, .id = "week")
+# both_weeks_density[both_weeks_density$week == "2","week"] <- "Week 1"
+# both_weeks_density[both_weeks_density$week == "1","week"] <- "Week 26"
+# 
+# library(ggpubr)
+# ggarrange(week1density, week26density, ncol = 2, nrow = 1, common.legend = TRUE, legend="bottom")
+# 
+# ggplot(both_weeks_density, aes(x=value, group=type, fill=type)) +
+#   geom_density(alpha=0.67) +
+#   xlab("Phylogenetic Distance") +
+#   ylab("Density") + 
+#   xlim(0,100) +
+#   guides(fill=guide_legend(title="Metric")) +
+#   ggtitle("Mean NRI vs. NTI Phylogenetic Distances") +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   facet_wrap(~week) +
+#   scale_fill_manual(values=c("red","blue")) +
+#   theme(legend.position = "bottom", text = element_text(size = 25)) 
+
+
+#redo turnover advanced modeling
+
+#### if not resolved elsewhere -- prune week 1 into week 26 communities
+# combined_week_1_NTI_reduced <- combined_week_1_NTI %>%
+#   filter(community %in% combined_week_26_NTI$community)
+# combined_week_1_NRI_reduced <- combined_week_1_nri %>%
+#   filter(community %in% combined_week_26_nri$community)
+# 
+# 
+# 
+# #NTI turnover ratios
+# NTI_week_1 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_week_26 <- rep(NA, nrow(combined_week_26_NTI))
+# 
+# NTI_turnover_ratios <- data.frame(NTI_week_1, NTI_week_26)
+# NTI_turnover_ratios$NTI_reduced_week_26 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$richness_week_1 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$richness_week_26 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$NTI_turnover <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$richness_turnover <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$BCR <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$mean_latitude <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$latitude <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$longitude <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$mig_prop_week_1 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$mig_prop_week_26 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$mig_prop_turnover <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# NTI_turnover_ratios$community <- rep(NA, nrow(combined_week_1_NTI_reduced))
+# 
+# NTI_turnover_ratios$NTI_week_1 <- combined_week_1_NTI_reduced$NTI
+# NTI_turnover_ratios$NTI_week_26 <- combined_week_26_NTI$NTI
+# NTI_turnover_ratios$richness_week_1 <- combined_week_1_NTI_reduced$ntaxa
+# NTI_turnover_ratios$richness_week_26 <- combined_week_26_NTI$ntaxa
+# NTI_turnover_ratios$NTI_turnover <- NTI_turnover_ratios$NTI_week_26 - NTI_turnover_ratios$NTI_week_1
+# NTI_turnover_ratios$richness_turnover <- NTI_turnover_ratios$richness_week_26 - NTI_turnover_ratios$richness_week_1
+# NTI_turnover_ratios$BCR <- combined_week_1_NTI_reduced$BCR
+# NTI_turnover_ratios$latitude <- combined_week_1_NTI_reduced$latitude
+# NTI_turnover_ratios$longitude <- combined_week_1_NTI_reduced$longitude
+# NTI_turnover_ratios$mig_prop_week_1 <- combined_week_1_NTI_reduced$proportion
+# NTI_turnover_ratios$mig_prop_week_26 <- combined_week_26_NTI$proportion
+# NTI_turnover_ratios$mig_prop_turnover <- NTI_turnover_ratios$mig_prop_week_26 - NTI_turnover_ratios$mig_prop_week_1
+# NTI_turnover_ratios$community <- combined_week_1_NTI_reduced$community
+# 
+# plot(NTI_turnover_ratios$NTI_turnover ~ NTI_turnover_ratios$richness_turnover) 
+# 
+# 
+# 
+# #redo with NRI
+# #NRI turnover ratios
+# NRI_week_1 <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_week_26 <- rep(NA, nrow(combined_week_26_nri))
+# 
+# NRI_turnover_ratios <- data.frame(NRI_week_1, NRI_week_26)
+# NRI_turnover_ratios$NRI_reduced_week_26 <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$richness_week_1 <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$richness_week_26 <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$NRI_turnover <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$richness_turnover <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$BCR <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$mean_latitude <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$latitude <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$longitude <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$mig_prop_week_1 <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$mig_prop_week_26 <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$mig_prop_turnover <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# NRI_turnover_ratios$community <- rep(NA, nrow(combined_week_1_NRI_reduced))
+# 
+# NRI_turnover_ratios$NRI_week_1 <- combined_week_1_NRI_reduced$NRI
+# NRI_turnover_ratios$NRI_week_26 <- combined_week_26_nri$NRI
+# NRI_turnover_ratios$richness_week_1 <- combined_week_1_NRI_reduced$ntaxa
+# NRI_turnover_ratios$richness_week_26 <- combined_week_26_nri$ntaxa
+# NRI_turnover_ratios$NRI_turnover <- NRI_turnover_ratios$NRI_week_26 - NRI_turnover_ratios$NRI_week_1
+# NRI_turnover_ratios$richness_turnover <- NRI_turnover_ratios$richness_week_26 - NRI_turnover_ratios$richness_week_1
+# NRI_turnover_ratios$BCR <- combined_week_1_NRI_reduced$BCR
+# NRI_turnover_ratios$latitude <- combined_week_1_NRI_reduced$latitude
+# NRI_turnover_ratios$longitude <- combined_week_1_NRI_reduced$longitude
+# NRI_turnover_ratios$mig_prop_week_1 <- combined_week_1_NRI_reduced$proportion
+# NRI_turnover_ratios$mig_prop_week_26 <- combined_week_26_nri$proportion
+# NRI_turnover_ratios$mig_prop_turnover <- NRI_turnover_ratios$mig_prop_week_26 - NRI_turnover_ratios$mig_prop_week_1
+# NRI_turnover_ratios$community <- combined_week_1_NRI_reduced$community
+# 
+# plot(NRI_turnover_ratios$NRI_turnover ~ NRI_turnover_ratios$richness_turnover) 
+
+# write.csv(NRI_turnover_ratios, "output/tables/NRI_turnover_ratios.csv")
+# write.csv(NTI_turnover_ratios, "output/tables/NTI_turnover_ratios.csv")
+
+NRI_turnover_ratios <- read.csv("output/tables/NRI_turnover_ratios.csv", row.names=1)
+NTI_turnover_ratios <- read.csv("output/tables/NTI_turnover_ratios.csv", row.names=1)
+
+
+library(ggExtra)
+#### first try to plot them nicer
+#plot NTI turnover vs. richness turnover
+# NTI_turnover_plot <- ggplot(mapping = aes(x = NTI_turnover_ratios$richness_turnover, y = NTI_turnover_ratios$NTI_turnover)) + 
+#   geom_point(aes(color = NTI_turnover_ratios$latitude), size=4) + 
+#   scale_colour_viridis(name = "Latitude", direction = 1) + 
+#   ggtitle("NTI vs. Richness Differences (June - January)") + 
+#   labs(x = "Richness Difference", y = "NTI Difference") +
+#   geom_smooth(method = "lm")
+# ggMarginal(NTI_turnover_plot, fill = "green")
+
+#NTI_turnover_gls <- gls(NTI_turnover ~ richness_turnover, data = NTI_turnover_ratios, corSpher(form = ~latitude+longitude, nugget = TRUE), na.action = na.omit)
+#saveRDS(NTI_turnover_gls, "output/tables/NTI_turnover_gls.rds")
+
+#summary(NTI_turnover_gls) #p = 
+
+#plot NRI turnover vs. richness turnover
+# ggplot(mapping = aes(x = NRI_turnover_ratios$richness_turnover, y = NRI_turnover_ratios$NRI_turnover)) + 
+#   geom_point(aes(color = NRI_turnover_ratios$latitude), size=4) + 
+#   scale_colour_viridis(name = "Latitude", direction = 1) + 
+#   ggtitle("NRI vs. Richness Differences (June - January)") + 
+#   labs(x = "Richness Difference", y = "NRI Difference") +
+#   geom_smooth(method = "lm")
+# 
+# NRI_turnover_gls <- gls(NRI_turnover ~ richness_turnover, data = NRI_turnover_ratios, corSpher(form = ~latitude+longitude, nugget = TRUE), na.action = na.omit)
+# summary(NRI_turnover_gls) #p = 
+# 
+# #plot NTI turnover vs. mig prop turnover
+# NTI_mig_prop_turnover_plot <- ggplot(mapping = aes(x = NTI_turnover_ratios$mig_prop_turnover, y = NTI_turnover_ratios$NTI_turnover)) + 
+#   geom_point(aes(color = NTI_turnover_ratios$latitude), size=4) + 
+#   scale_colour_viridis(name = "Latitude", direction = 1) + 
+#   ggtitle("NTI vs. Mig. Prop. Differences (June - January)") + 
+#   labs(x = "Mig. Prop. Difference", y = "NTI Difference") +
+#   geom_smooth(method = "lm")
+# ggMarginal(NTI_mig_prop_turnover_plot, fill = "green")
+# 
+# 
+# NTI_mig_prop_turnover_gls <- gls(NTI_turnover ~ mig_prop_turnover, data = NTI_turnover_ratios, corSpher(form = ~latitude+longitude, nugget = TRUE), na.action = na.omit)
+# summary(NTI_mig_prop_turnover_gls) #p = 
+# 
+# 
+# #plot NRI turnover vs. mig prop turnover
+# NRI_mig_prop_turnover_plot <- ggplot(mapping = aes(x = NRI_turnover_ratios$mig_prop_turnover, y = NRI_turnover_ratios$NRI_turnover)) + 
+#   geom_point(aes(color = NRI_turnover_ratios$latitude), size=4) + 
+#   scale_colour_viridis(name = "Latitude", direction = 1) + 
+#   ggtitle("NRI vs. Mig. Prop. Differences (June - January)") + 
+#   labs(x = "Mig. Prop. Difference", y = "NRI Difference") +
+#   geom_smooth(method = "lm")
+# ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
+# 
+# 
+# NRI_mig_prop_turnover_gls <- gls(NRI_turnover ~ mig_prop_turnover, data = NRI_turnover_ratios, corSpher(form = ~latitude+longitude, nugget = TRUE), na.action = na.omit)
+# summary(NRI_mig_prop_turnover_gls) #p = 
+
+
+
+#turnover ratios (have to run the week 26 stuff first)
+
+#### if not resolved elsewhere -- prune week 1 into week 26 communities
+# NTI_week_1_continental_reduced <- passerine.ses.mntd.1.continental %>%
+#   filter(community %in% passerine.ses.mntd.26.continental$community)
+# NRI_week_1_continental_reduced <- passerine.ses.mpd.1.continental %>%
+#   filter(community %in% passerine.ses.mpd.26.continental$community)
+# 
+# #NTI continental
+# NTI_week_1_continental <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_week_26_continental <- rep(NA, nrow(passerine.ses.mntd.26.continental))
+# 
+# 
+# NTI_turnover_ratios_continental <- data.frame(NTI_week_1_continental, NTI_week_26_continental)
+# NTI_turnover_ratios_continental$NTI_reduced_week_26 <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$richness_week_1 <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$richness_week_26 <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$NTI_turnover <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$richness_turnover <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$BCR <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$mean_latitude <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$latitude <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$longitude <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$mig_prop_week_1 <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$mig_prop_week_26 <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$mig_prop_turnover <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# NTI_turnover_ratios_continental$community <- rep(NA, nrow(NTI_week_1_continental_reduced))
+# 
+# NTI_turnover_ratios_continental$NTI_week_1_continental <- NTI_week_1_continental_reduced$NTI
+# NTI_turnover_ratios_continental$NTI_week_26_continental <- passerine.ses.mntd.26.continental$NTI
+# NTI_turnover_ratios_continental$richness_week_1 <- NTI_week_1_continental_reduced$ntaxa
+# NTI_turnover_ratios_continental$richness_week_26 <- passerine.ses.mntd.26.continental$ntaxa
+# NTI_turnover_ratios_continental$NTI_turnover <- NTI_turnover_ratios_continental$NTI_week_26_continental - NTI_turnover_ratios_continental$NTI_week_1_continental
+# NTI_turnover_ratios_continental$richness_turnover <- NTI_turnover_ratios_continental$richness_week_26 - NTI_turnover_ratios_continental$richness_week_1
+# NTI_turnover_ratios_continental$BCR <- NTI_week_1_continental_reduced$BCR
+# NTI_turnover_ratios_continental$latitude <- NTI_week_1_continental_reduced$latitude
+# NTI_turnover_ratios_continental$longitude <- NTI_week_1_continental_reduced$longitude
+# NTI_turnover_ratios_continental$mig_prop_week_1 <- NTI_week_1_continental_reduced$proportion
+# NTI_turnover_ratios_continental$mig_prop_week_26 <- passerine.ses.mntd.26.continental$proportion
+# NTI_turnover_ratios_continental$mig_prop_turnover <- NTI_turnover_ratios_continental$mig_prop_week_26 - NTI_turnover_ratios_continental$mig_prop_week_1
+# NTI_turnover_ratios_continental$community <- NTI_week_1_continental_reduced$community
+# 
+# library(ggExtra)
+# NTI_turnover_plot <- ggplot(mapping = aes(x = NTI_turnover_ratios_continental$richness_turnover, y = NTI_turnover_ratios_continental$NTI_turnover)) + 
+#   geom_point(aes(color = NTI_turnover_ratios_continental$latitude), size=4) + 
+#   scale_colour_viridis(name = "Latitude", direction = 1) + 
+#   ggtitle("NTI vs. Richness Differences (June - January)") + 
+#   labs(x = "Richness Difference", y = "NTI Difference") +
+#   geom_smooth(method = "lm")
+# ggMarginal(NTI_turnover_plot, fill = "green")
+# 
+# 
+# #NRI continental
+# NRI_week_1_continental <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_week_26_continental <- rep(NA, nrow(passerine.ses.mpd.26.continental))
+# 
+# 
+# NRI_turnover_ratios_continental <- data.frame(NRI_week_1_continental, NRI_week_26_continental)
+# NRI_turnover_ratios_continental$NRI_reduced_week_26 <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$richness_week_1 <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$richness_week_26 <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$NRI_turnover <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$richness_turnover <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$BCR <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$mean_latitude <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$latitude <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$longitude <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$mig_prop_week_1 <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$mig_prop_week_26 <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$mig_prop_turnover <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# NRI_turnover_ratios_continental$community <- rep(NA, nrow(NRI_week_1_continental_reduced))
+# 
+# NRI_turnover_ratios_continental$NRI_week_1_continental <- NRI_week_1_continental_reduced$NRI
+# NRI_turnover_ratios_continental$NRI_week_26_continental <- passerine.ses.mpd.26.continental$NRI
+# NRI_turnover_ratios_continental$richness_week_1 <- NRI_week_1_continental_reduced$ntaxa
+# NRI_turnover_ratios_continental$richness_week_26 <- passerine.ses.mpd.26.continental$ntaxa
+# NRI_turnover_ratios_continental$NRI_turnover <- NRI_turnover_ratios_continental$NRI_week_26_continental - NRI_turnover_ratios_continental$NRI_week_1_continental
+# NRI_turnover_ratios_continental$richness_turnover <- NRI_turnover_ratios_continental$richness_week_26 - NRI_turnover_ratios_continental$richness_week_1
+# NRI_turnover_ratios_continental$BCR <- NRI_week_1_continental_reduced$BCR
+# NRI_turnover_ratios_continental$latitude <- NRI_week_1_continental_reduced$latitude
+# NRI_turnover_ratios_continental$longitude <- NRI_week_1_continental_reduced$longitude
+# NRI_turnover_ratios_continental$mig_prop_week_1 <- NRI_week_1_continental_reduced$proportion
+# NRI_turnover_ratios_continental$mig_prop_week_26 <- passerine.ses.mpd.26.continental$proportion
+# NRI_turnover_ratios_continental$mig_prop_turnover <- NRI_turnover_ratios_continental$mig_prop_week_26 - NRI_turnover_ratios_continental$mig_prop_week_1
+# NRI_turnover_ratios_continental$community <- NRI_week_1_continental_reduced$community
+# 
+# write.csv(NRI_turnover_ratios_continental, "output/tables/NRI_turnover_ratios_continental.csv")
+# write.csv(NTI_turnover_ratios_continental, "output/tables/NTI_turnover_ratios_continental.csv")
+NRI_turnover_ratios_continental <- read.csv("output/tables/NRI_turnover_ratios_continental.csv", row.names=1)
+NTI_turnover_ratios_continental <- read.csv("output/tables/NTI_turnover_ratios_continental.csv", row.names=1)
+
+
+
+library(ggExtra)
+NRI_turnover_plot <- ggplot(mapping = aes(x = NRI_turnover_ratios_continental$richness_turnover, y = NRI_turnover_ratios_continental$NRI_turnover)) + 
+  geom_point(aes(color = NRI_turnover_ratios_continental$latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("NRI vs. Richness Differences (June - January)") + 
+  labs(x = "Richness Difference", y = "NRI Difference") +
+  geom_smooth(method = "lm")
+ggMarginal(NRI_turnover_plot, fill = "green")
+
+subset_NTI_turnover_plot <- NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental), 500),]
+test_NTI_turnover_gls <- gls(NTI_turnover ~ richness_turnover, data = subset_NTI_turnover_plot, corSpher(form = ~latitude+longitude, nugget = TRUE), na.action = na.omit)
+summary(test_NTI_turnover_gls)
+
+#other modeling approaches
+#test with straight up lm
+subset_NTI_turnover_plot <- NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental), 5000),]
+#fully has spatial autocorrelation
+
+library(mgcv)
+library(glmmTMB)
+
+#play around with GLMMTMB
+#numeric factor recording coordinates (not currently using)
+# NTI_turnover_ratios_continental$pos <- numFactor(scale(NTI_turnover_ratios_continental$latitude), scale(NTI_turnover_ratios_continental$longitude))
+#dummy group factor to be used as a random term (not currently using)
+# NTI_turnover_ratios_continental$ID <- factor(rep(1, nrow(NTI_turnover_ratios_continental)))
+
+subset_NTI_turnover_plot <- NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental), 10000),]
+
+#glmmTMB tests with all combos
+#### continental
+
+#NTI ~ richness
+glmmTMB_continental_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover + (1 | BCR), NTI_turnover_ratios_continental)
+summary(glmmTMB_continental_NTI_richness) #p == 0, richness_turnover estimate = -0.0055
+
+#NRI ~ richness
+glmmTMB_continental_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover + (1 | BCR), NRI_turnover_ratios_continental)
+summary(glmmTMB_continental_NRI_richness) #p == 0, richness_turnover estimate = 0.0191
+
+#NTI ~ mig_prop
+glmmTMB_continental_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover + (1 | BCR), NTI_turnover_ratios_continental)
+summary(glmmTMB_continental_NTI_mig_prop) #p == 0, mig_prop_turnover estimate = -0.457
+
+#NRI ~ mig_prop
+glmmTMB_continental_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover + (1 | BCR), NRI_turnover_ratios_continental)
+summary(glmmTMB_continental_NRI_mig_prop) #p == 0, mig_prop_turnover estimate = 2.221
+
+#### BCR
+#NTI ~ richness
+glmmTMB_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover + (1 | BCR), NTI_turnover_ratios)
+summary(glmmTMB_NTI_richness) #p == 0.418, richness_turnover estimate = 0.00058
+
+#NRI ~ richness
+glmmTMB_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover + (1 | BCR), NRI_turnover_ratios)
+summary(glmmTMB_NRI_richness) #p == 0, richness_turnover estimate = 0.017
+
+#NTI ~ mig_prop
+glmmTMB_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover + (1 | BCR), NTI_turnover_ratios)
+summary(glmmTMB_NTI_mig_prop) #p == 0.0025, mig_prop_turnover estimate = 0.195
+
+#NRI ~ mig_prop
+glmmTMB_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover + (1 | BCR), NRI_turnover_ratios)
+summary(glmmTMB_NRI_mig_prop) #p == 0, mig_prop_turnover estimate = 2.297
+
+
+
+#### test without spatial correlation structure
+#NTI ~ richness
+glmmTMB_continental_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover, NTI_turnover_ratios_continental)
+summary(glmmTMB_continental_NTI_richness) #p == 0, richness_turnover estimate = -0.0128
+
+#NRI ~ richness
+glmmTMB_continental_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover, NRI_turnover_ratios_continental)
+summary(glmmTMB_continental_NRI_richness) #p == 0, richness_turnover estimate = 0.0294
+
+#NTI ~ mig_prop
+glmmTMB_continental_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover, NTI_turnover_ratios_continental)
+summary(glmmTMB_continental_NTI_mig_prop) #p == 0, mig_prop_turnover estimate = -1.488
+
+#NRI ~ mig_prop
+glmmTMB_continental_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover, NRI_turnover_ratios_continental)
+summary(glmmTMB_continental_NRI_mig_prop) #p == 0, mig_prop_turnover estimate = 3.112
+
+#### BCR
+#NTI ~ richness
+glmmTMB_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover, NTI_turnover_ratios)
+summary(glmmTMB_NTI_richness) #p == 0, richness_turnover estimate = -0.022
+
+#NRI ~ richness
+glmmTMB_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover, NRI_turnover_ratios)
+summary(glmmTMB_NRI_richness) #p == 0, richness_turnover estimate = 0.015
+
+#NTI ~ mig_prop
+glmmTMB_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover, NTI_turnover_ratios)
+summary(glmmTMB_NTI_mig_prop) #p == 0, mig_prop_turnover estimate = -1.737
+
+#NRI ~ mig_prop
+glmmTMB_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover, NRI_turnover_ratios)
+summary(glmmTMB_NRI_mig_prop) #p == 0, mig_prop turnover estimate = 1.793
+
+
+#### plots
+
+#### continental
+
+#plot NTI turnover vs. richness turnover
+NTI_richness_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_continental, aes(x=richness_turnover, y=NTI_turnover)) + 
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Richness Differences (June - January)") + 
+  labs(x = "Richness Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NTI_richness_turnover_plot_continental, fill = "green")
+
+#plot NRI turnover vs. richness turnover
+NRI_richness_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_continental, aes(x=richness_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Richness Differences (June - January)") + 
+  labs(x = "Richness Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NRI_richness_turnover_plot_continental, fill = "green")
+
+#plot NTI turnover vs. mig_prop turnover
+NTI_mig_prop_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_continental, aes(x=mig_prop_turnover, y=NTI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Proportion Differences (June - January)") + 
+  labs(x = "Proportion Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NTI_mig_prop_turnover_plot_continental, fill = "green")
+
+#plot NRI turnover vs. mig_prop turnover
+NRI_mig_prop_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_continental, aes(x=mig_prop_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Proportion Differences (June - January)") + 
+  labs(x = "Proportion Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NRI_mig_prop_turnover_plot_continental, fill = "green")
+
+
+### BCR
+#plot NTI turnover vs. richness turnover
+NTI_richness_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=richness_turnover, y=NTI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Richness Differences (June - January)") + 
+  labs(x = "Richness Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NTI_richness_turnover_plot, fill = "green")
+
+#plot NRI turnover vs. richness turnover
+NRI_richness_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=richness_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Richness Differences (June - January)") + 
+  labs(x = "Richness Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NRI_richness_turnover_plot, fill = "green")
+
+#plot NTI turnover vs. mig_prop turnover
+NTI_mig_prop_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=mig_prop_turnover, y=NTI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Proportion Differences (June - January)") + 
+  labs(x = "Proportion Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NTI_mig_prop_turnover_plot, fill = "green")
+
+#plot NRI turnover vs. mig_prop turnover
+NRI_mig_prop_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=mig_prop_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=4) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Proportion Differences (June - January)") + 
+  labs(x = "Proportion Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
+  geom_smooth(method = "lm", se=TRUE)
+ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
+
+
+#### GAMS across the groups
+#### continental
+
+#NTI ~ richness
+gam_continental_NTI_richness <- gam(
+  NTI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
+  data = NTI_turnover_ratios_continental,
+  method = "REML"
+) 
+summary(gam_continental_NTI_richness) #p == 0
+
+#NRI ~ richness
+gam_continental_NRI_richness <- gam(
+  NRI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
+  data = NRI_turnover_ratios_continental,
+  method = "REML"
+) 
+summary(gam_continental_NRI_richness) #p == 0
+
+#NTI ~ mig_prop
+gam_continental_NTI_mig_prop <- gam(
+  NTI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
+  data = NTI_turnover_ratios_continental,
+  method = "REML"
+) 
+summary(gam_continental_NTI_mig_prop) #p == 0
+
+#NRI ~ mig_prop
+gam_continental_NRI_mig_prop <- gam(
+  NRI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
+  data = NRI_turnover_ratios_continental,
+  method = "REML"
+) 
+summary(gam_continental_NRI_mig_prop) #p == 0
+
+
+#### BCR
+
+#NTI ~ richness
+gam_NTI_richness <- gam(
+  NTI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
+  data = NTI_turnover_ratios,
+  method = "REML"
+) 
+summary(gam_NTI_richness) #p == 0
+
+#NRI ~ richness
+gam_NRI_richness <- gam(
+  NRI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
+  data = NRI_turnover_ratios,
+  method = "REML"
+) 
+summary(gam_NRI_richness) #p == 0
+
+#NTI ~ mig_prop
+gam_NTI_mig_prop <- gam(
+  NTI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
+  data = NTI_turnover_ratios,
+  method = "REML"
+) 
+summary(gam_NTI_mig_prop) #p == 0.159
+
+#NRI ~ mig_prop
+gam_NRI_mig_prop <- gam(
+  NRI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
+  data = NRI_turnover_ratios,
+  method = "REML"
+) 
+summary(gam_NRI_mig_prop) #p == 0
+
+
+### model comparison with LMERs
+
+###NTIs
+#all lmers
+library(lme4)
+library(AICcmodavg)
+library(sjPlot)
+
+
+#### regional
+lmer_NTI_richness_migprop_BCR <- lmer(NTI_turnover ~ richness_turnover + mig_prop_turnover + (1 | BCR), data = NTI_turnover_ratios)
+lmer_NTI_richness_BCR <- lmer(NTI_turnover ~ richness_turnover + (1 | BCR), data = NTI_turnover_ratios)
+lmer_NTI_mig_prop_BCR <- lmer(NTI_turnover ~ mig_prop_turnover + (1 | BCR), data = NTI_turnover_ratios)
+lmer_NTI_mig_prop_interaction_BCR <- lmer(NTI_turnover ~ richness_turnover + mig_prop_turnover + richness_turnover*mig_prop_turnover + (1 | BCR), data = NTI_turnover_ratios)
+lmer_NTI_null <- lmer(NTI_turnover ~ (1 | BCR), data = NTI_turnover_ratios)
+
+
+NTI_models <- list(lmer_NTI_richness_migprop_BCR, lmer_NTI_mig_prop_interaction_BCR,
+                   lmer_NTI_richness_BCR, lmer_NTI_mig_prop_BCR, lmer_NTI_null)
+
+NTI_model.names <- c('lmer_NTI_richness_migprop_BCR', 'lmer_NTI_mig_prop_interaction_BCR',
+                     'lmer_NTI_richness_BCR', 'lmer_NTI_mig_prop_BCR','lmer_NTI_null')
+
+aictab(cand.set = NTI_models, modnames = NTI_model.names)
+tab_model(lmer_NTI_mig_prop_BCR)
+tab_model(lmer_NTI_richness_BCR)
+tab_model(lmer_NTI_richness_migprop_BCR)
+tab_model(lmer_NTI_mig_prop_interaction_BCR)
+
+
+###NRIs
+#all lmers
+lmer_NRI_richness_turnover_migprop_BCR <- lmer(NRI_turnover ~ richness_turnover + mig_prop_turnover + (1 | BCR), data = NRI_turnover_ratios)
+lmer_NRI_richness_turnover_BCR <- lmer(NRI_turnover ~ richness_turnover + (1 | BCR), data = NRI_turnover_ratios)
+lmer_NRI_mig_prop_turnover_BCR <- lmer(NRI_turnover ~ mig_prop_turnover + (1 | BCR), data = NRI_turnover_ratios)
+lmer_NRI_mig_prop_turnover_interaction_BCR <- lmer(NRI_turnover ~ richness_turnover + mig_prop_turnover + richness_turnover*mig_prop_turnover + (1 | BCR), data = NRI_turnover_ratios)
+lmer_NRI_null <- lmer(NRI_turnover ~ (1 | BCR), data = NRI_turnover_ratios)
+
+NRI_models <- list(lmer_NRI_richness_turnover_migprop_BCR, lmer_NRI_mig_prop_turnover_interaction_BCR,
+                   lmer_NRI_richness_turnover_BCR, lmer_NRI_mig_prop_turnover_BCR, lmer_NRI_null)
+
+NRI_model.names <- c('lmer_NRI_richness_turnover_migprop_BCR', 'lmer_NRI_mig_prop_turnover_interaction_BCR',
+                     'lmer_NRI_richness_turnover_BCR', 'lmer_NRI_mig_prop_turnover_BCR', 'lmer_NRI_null')
+
+aictab(cand.set = NRI_models, modnames = NRI_model.names)
+tab_model(lmer_NRI_mig_prop_turnover_interaction_BCR)
+tab_model(lmer_NRI_mig_prop_turnover_BCR)
+tab_model(lmer_NRI_richness_turnover_BCR)
+tab_model(lmer_NRI_richness_turnover_migprop_BCR)
+
+
+#### continental
+
+
+
+### try another new method: sdmTMB
+
+library(sdmTMB)
+#test out sdmTMB
+head(NTI_turnover_ratios)
+
+library(sf)
+mesh <- make_mesh(NTI_turnover_ratios, xy_cols = c("longitude", "latitude"), cutoff = 50)
+plot(mesh)
+
+### regional
+### regional NTI
+#NTI ~ richness
+sdmTMB_NTI_richness <- sdmTMB(
+  formula = NTI_turnover ~ richness_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"  # enables spatial random field
+)
+tidy(sdmTMB_NTI_richness, conf.int = TRUE)
+
+#NTI ~ mig. prop.
+sdmTMB_NTI_mig_prop <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop, conf.int = TRUE)
+
+#NTI ~ richness + mig. prop.
+sdmTMB_NTI_mig_prop_richness <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness, conf.int = TRUE)
+
+#NTI ~ richness + mig. prop. + interaction
+sdmTMB_NTI_mig_prop_richness_interaction <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness_interaction, conf.int = TRUE)
+
+#NTI ~ null
+sdmTMB_NTI_null <- sdmTMB(
+  formula = NTI_turnover ~ 1,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_null, conf.int = TRUE)
+
+#create function to compare sdmTMB models
+compare_sdmTMB_models <- function(..., sort = TRUE) {
+  models <- list(...)
+  model_names <- as.character(substitute(list(...)))[-1]
+  
+  out <- data.frame(
+    Model = model_names,
+    AIC = sapply(models, AIC),
+    BIC = sapply(models, BIC),
+    logLik = sapply(models, logLik)
+  )
+  
+  out$Delta_AIC <- out$AIC - min(out$AIC)
+  out$Weight <- exp(-0.5 * out$Delta_AIC)
+  out$Weight <- out$Weight / sum(out$Weight)
+  
+  if (sort) out <- out[order(out$AIC), ]
+  rownames(out) <- NULL
+  return(out)
+}
+
+#model selection
+compare_sdmTMB_models(sdmTMB_NTI_richness, sdmTMB_NTI_mig_prop, sdmTMB_NTI_mig_prop_richness,
+                      sdmTMB_NTI_mig_prop_richness_interaction, sdmTMB_NTI_null)
+
+
+###regional NRI
+### regional NRI
+#NRI ~ richness
+sdmTMB_NRI_richness <- sdmTMB(
+  formula = NRI_turnover ~ richness_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"  # enables spatial random field
+)
+tidy(sdmTMB_NRI_richness, conf.int = TRUE)
+
+#NRI ~ mig. prop.
+sdmTMB_NRI_mig_prop <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop, conf.int = TRUE)
+
+#NRI ~ richness + mig. prop.
+sdmTMB_NRI_mig_prop_richness <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness, conf.int = TRUE)
+
+#NRI ~ richness + mig. prop. + interaction
+sdmTMB_NRI_mig_prop_richness_interaction <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness_interaction, conf.int = TRUE)
+
+#NRI ~ null
+sdmTMB_NRI_null <- sdmTMB(
+  formula = NRI_turnover ~ 1,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_null, conf.int = TRUE)
+
+#model selection
+compare_sdmTMB_models(sdmTMB_NRI_richness, sdmTMB_NRI_mig_prop, sdmTMB_NRI_mig_prop_richness,
+                      sdmTMB_NRI_mig_prop_richness_interaction, sdmTMB_NRI_null)
+
+
+
+
+
+### continental
+### continental NTI
+mesh_continental <- make_mesh(NTI_turnover_ratios_continental, xy_cols = c("latitude", "longitude"), cutoff = 50)
+
+#NTI ~ richness
+sdmTMB_NTI_richness_continental <- sdmTMB(
+  formula = NTI_turnover ~ richness_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"  # enables spatial random field
+)
+tidy(sdmTMB_NTI_richness_continental, conf.int = TRUE)
+
+#NTI ~ mig. prop.
+sdmTMB_NTI_mig_prop_continental <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_continental, conf.int = TRUE)
+
+#NTI ~ richness + mig. prop.
+sdmTMB_NTI_mig_prop_richness_continental <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness_continental, conf.int = TRUE)
+
+#NTI ~ richness + mig. prop. + interaction
+sdmTMB_NTI_mig_prop_richness_interaction_continental <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness_interaction_continental, conf.int = TRUE)
+
+#NTI ~ null
+sdmTMB_NTI_null_continental <- sdmTMB(
+  formula = NTI_turnover ~ 1,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_null_continental, conf.int = TRUE)
+
+#model selection
+compare_sdmTMB_models(sdmTMB_NTI_richness_continental, sdmTMB_NTI_mig_prop_continental, sdmTMB_NTI_mig_prop_richness_continental,
+                      sdmTMB_NTI_mig_prop_richness_interaction_continental, sdmTMB_NTI_null_continental)
+
+
+
+### continental NRI
+
+#NRI ~ richness
+sdmTMB_NRI_richness_continental <- sdmTMB(
+  formula = NRI_turnover ~ richness_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"  # enables spatial random field
+)
+tidy(sdmTMB_NRI_richness_continental, conf.int = TRUE)
+
+#NRI ~ mig. prop.
+sdmTMB_NRI_mig_prop_continental <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_continental, conf.int = TRUE)
+
+#NRI ~ richness + mig. prop.
+sdmTMB_NRI_mig_prop_richness_continental <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness_continental, conf.int = TRUE)
+
+#NRI ~ richness + mig. prop. + interaction
+sdmTMB_NRI_mig_prop_richness_interaction_continental <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness_interaction_continental, conf.int = TRUE)
+
+#NRI ~ null
+sdmTMB_NRI_null_continental <- sdmTMB(
+  formula = NRI_turnover ~ 1,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_null_continental, conf.int = TRUE)
+
+#model selection
+compare_sdmTMB_models(sdmTMB_NRI_richness_continental, sdmTMB_NRI_mig_prop_continental, sdmTMB_NRI_mig_prop_richness_continental,
+                      sdmTMB_NRI_mig_prop_richness_interaction_continental, sdmTMB_NRI_null_continental)
+
+#test for spatial autocorrelation
+
+#NTI turnover ratios
+library(spdep)
+test_NTI_turnover_ratios <- NTI_turnover_ratios[,-c(3,9)]
+test_NTI_turnover_ratios <- test_NTI_turnover_ratios[complete.cases(test_NTI_turnover_ratios),]
+coords <- cbind(test_NTI_turnover_ratios$longitude, test_NTI_turnover_ratios$latitude)
+nb <- dnearneigh(coords, 0, 5)
+lw <- nb2listw(nb)
+model <- gls(NTI_turnover ~ richness_turnover, test_NTI_turnover_ratios, method = "REML")
+moran.test(residuals(model), lw)
+#Moran's I statistic standard deviate: 509.48
+#p-value: <2.2 e -16
+#Moran I statistic: 1.3426 e -01
+
+#NRI turnover ratios
+test_NRI_turnover_ratios <- NRI_turnover_ratios[,-c(3,9)]
+test_NRI_turnover_ratios <- test_NRI_turnover_ratios[complete.cases(test_NRI_turnover_ratios),]
+coords2 <- cbind(test_NRI_turnover_ratios$longitude, test_NRI_turnover_ratios$latitude)
+nb2 <- dnearneigh(coords2, 0, 5)
+lw2<- nb2listw(nb2)
+model2 <- gls(NRI_turnover ~ richness_turnover, test_NRI_turnover_ratios, method = "REML")
+moran.test(residuals(model2), lw2)
+#Moran's I statistic standard deviate: 933.28
+#p-value: <2.2 e -16
+#Moran I statistic: 2.4597 e -01
+
+#NTI turnover ratios continental
+test_NTI_turnover_ratios_continental <- NTI_turnover_ratios_continental[,-c(3,9)]
+test_NTI_turnover_ratios_continental <- test_NTI_turnover_ratios_continental[complete.cases(test_NTI_turnover_ratios_continental),]
+coords3 <- cbind(test_NTI_turnover_ratios_continental$longitude, test_NTI_turnover_ratios_continental$latitude)
+nb3 <- dnearneigh(coords3, 0, 5)
+lw3<- nb2listw(nb3)
+model3 <- gls(NTI_turnover ~ richness_turnover, test_NTI_turnover_ratios_continental, method = "REML")
+moran.test(residuals(model3), lw3)
+#Moran's I statistic standard deviate: 753.83
+#p-value: <2.2 e -16
+#Moran I statistic: 1.98667 e -01
+
+#NTI turnover ratios continental
+test_NRI_turnover_ratios_continental <- NRI_turnover_ratios_continental[,-c(3,9)]
+test_NRI_turnover_ratios_continental <- test_NRI_turnover_ratios_continental[complete.cases(test_NRI_turnover_ratios_continental),]
+coords4 <- cbind(test_NRI_turnover_ratios_continental$longitude, test_NRI_turnover_ratios_continental$latitude)
+nb4 <- dnearneigh(coords4, 0, 5)
+lw4<- nb2listw(nb4)
+model4 <- gls(NRI_turnover ~ richness_turnover, test_NRI_turnover_ratios_continental, method = "REML")
+moran.test(residuals(model4), lw4)
+#Moran's I statistic standard deviate: 1199.1
+#p-value: <2.2 e -16
+#Moran I statistic: 3.1606 e -01
+
+
+### Consider re-doing Figure 4
+library(mapproj)
+library(sf)
+library(ggplot2)
+library(ggspatial)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+crs_102004 <- "+proj=lcc +lat_1=33 +lat_2=45 +lat_0=39 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+
+na_basemap <- ne_countries(continent = "North America", returnclass = "sf")
+na_basemap_proj <- st_transform(na_basemap, crs = crs_102004)
+
+
+NRI_turnover_ratios_sf <- st_as_sf(NRI_turnover_ratios, coords = c("longitude", "latitude"), crs = 4326)
+NRI_turnover_ratios_proj <- st_transform(NRI_turnover_ratios_sf, crs = crs_102004)
+NRI_turnover_ratios_proj <- NRI_turnover_ratios_proj %>%
+  mutate(X = st_coordinates(.)[,1],
+         Y = st_coordinates(.)[,2])
+
+#plot migratory proportion difference
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_sf(data = NRI_turnover_ratios_proj, aes(color = mig_prop_turnover), size = 0.75) +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  ggtitle("Seasonal Migratory Proportion Difference (June - January)") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  scale_color_gradient2("Mig. Prop. \nDiff.",
+                        midpoint = 0,
+                        low = "red",
+                        mid = "white",
+                        high = "blue")
+
+#plot species richness difference
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_sf(data = NRI_turnover_ratios_proj, aes(color = richness_turnover), size = 0.75) +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  ggtitle("Seasonal Species Richness Difference (June - January)") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  scale_color_gradient2("Richness \nDiff.",
+                        midpoint = 0,
+                        low = "red",
+                        mid = "white",
+                        high = "blue") 
+
+#plot regional NRI turnover
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_sf(data = NRI_turnover_ratios_proj, aes(color = NRI_turnover), size = 0.75) +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  ggtitle("Seasonal NRI Difference (June - January), Regional Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  scale_color_gradient2("NRI Diff.",
+                        midpoint = 0,
+                        low = "red",
+                        mid = "white",
+                        high = "blue")
+
+#add NTI ratios to this projection dataframe
+NRI_turnover_ratios_proj$NTI_turnover <- NTI_turnover_ratios$NTI_turnover
+
+#plot regional NTI turnover
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_sf(data = NRI_turnover_ratios_proj, aes(color = NTI_turnover), size = 0.75) +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  ggtitle("Seasonal NTI Difference (June - January), Regional Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  scale_color_gradient2("NTI Diff.",
+                        midpoint = 0,
+                        low = "red",
+                        mid = "white",
+                        high = "blue")
+
+#continental data plotting
+NRI_turnover_ratios_continental_sf <- st_as_sf(NRI_turnover_ratios_continental, coords = c("longitude", "latitude"), crs = 4326)
+NRI_turnover_ratios_continental_proj <- st_transform(NRI_turnover_ratios_continental_sf, crs = crs_102004)
+NRI_turnover_ratios_continental_proj <- NRI_turnover_ratios_continental_proj %>%
+  mutate(X = st_coordinates(.)[,1],
+         Y = st_coordinates(.)[,2])
+
+
+#plot continental NRI turnover
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_sf(data = NRI_turnover_ratios_continental_proj, aes(color = NRI_turnover), size = 0.75) +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  ggtitle("Seasonal NRI Difference (June - January), Continental Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  scale_color_gradient2("NRI Diff.",
+                        midpoint = 0,
+                        low = "red",
+                        mid = "white",
+                        high = "blue")
+
+#plot continental NTI turnover
+
+NRI_turnover_ratios_continental_proj$NTI_turnover <- NTI_turnover_ratios_continental$NTI_turnover
+
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_sf(data = NRI_turnover_ratios_continental_proj, aes(color = NTI_turnover), size = 0.75) +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  ggtitle("Seasonal NTI Difference (June - January), Continental Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  scale_color_gradient2("NTI Diff.",
+                        midpoint = 0,
+                        low = "red",
+                        mid = "white",
+                        high = "blue")

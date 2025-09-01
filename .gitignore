@@ -1,0 +1,24 @@
+# Ignore everything by default
+*
+
+# --- Keep these R scripts ---
+!annual_cycle_analyses.R
+!community_migratory_proportion.R
+!cscore_calculations.R
+!manuscript_analyses_redo.R
+!manuscript_figures.R
+!raster_download.R
+!weekly_namerican_passerine_communities.R
+
+# --- Keep documentation ---
+!README.md
+!LICENSE
+!.gitignore
+
+# --- Keep reproducibility info ---
+!environment.yml     # for conda
+!renv.lock           # for R package versions
+!sessionInfo.txt     # if you export R session info
+
+
+
