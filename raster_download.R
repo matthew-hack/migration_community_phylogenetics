@@ -3,25 +3,19 @@
 # The eBirdst data is partitioned into weekly distributional rasters.
 # These weekly species rasters are aggregated into weekly bird community presence-absence matrices.
 
-library(ebirdst)
-library(terra)
-library(sf)
-library(dplyr)
-library(tidyr)
-library(rnaturalearth)
-library(geodata)
-library(ggplot2)
-library(fields)
-library(stringr)
-library(TreeTools)
-library(viridis)
-library(rgdal)
-library(raster)
-library(devtools)
-library(data.table)
-#devtools::install_github("ropensci/rnaturalearthhires")
+#load required libraries
+required.libraries <- c("ebirdst","terra","sf","dplyr","tidyr","rnaturalearth",
+                        "geodata","ggplot2","fields","stringr","TreeTools",
+                        "viridis","rgdal","raster","devtools","data.table",
+                        "ape","picante","pez","phytools","vegan","adephylo",
+                        "phylobase","geiger","mvMORPH","OUwie","hisse",
+                        "BAMMtools","phylosignal","Biostrings","kableExtra",
+                        "betapart","gridExtra","reshape2")
+
+lapply(required.libraries, require, character.only = TRUE)
+
 extract <- terra::extract
-project <- terra::project #possible source of confusion regarding rgdal for later
+project <- terra::project
 
 # for non-example data use the species code or name instead of "example_data"
 path <- get_species_path("example_data")
@@ -319,21 +313,6 @@ species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_
                         "Passerina_amoena", "Passerina_cyanea", "Passerina_versicolor",
                         "Passerina_ciris", "Spiza_americana")
 
-
-# Check for needed packages, and install the missing ones
-required.libraries <- c("ape", "picante", 
-                        "pez", "phytools",
-                        "vegan", "adephylo", 
-                        "phylobase", "geiger", 
-                        "mvMORPH", "OUwie", 
-                        "hisse", "BAMMtools",
-                        "phylosignal", "Biostrings",
-                        "devtools","ggplot2", 
-                        "kableExtra", "betapart", "gridExtra",
-                        "reshape2")
-
-# Load all required libraries at once
-lapply(required.libraries, require, character.only = TRUE)
 
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
                                          period = "seasonal", metric = "mean", 
