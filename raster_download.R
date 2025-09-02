@@ -17,14 +17,10 @@ lapply(required.libraries, require, character.only = TRUE)
 extract <- terra::extract
 project <- terra::project
 
-# for non-example data use the species code or name instead of "example_data"
+# load the mapping parameters to generate necessary CRS
 path <- get_species_path("example_data")
-
-# load the mapping parameters
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
-
-# Pure intro stuff
 
 # download a simplified example dataset for Yellow-bellied Sapsucker in Michigan
 path <- ebirdst_download(species = "example_data")
@@ -65,9 +61,6 @@ abd_seasonal <- load_raster(path,
 
 abd_breeding <- abd_seasonal[["breeding"]]
 
-# load the mapping parameters
-fac_parameters <- load_fac_map_parameters(path)
-crs <- fac_parameters$custom_projection
 
 # define species whose data is to be downloaded from eBirdst
 species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
