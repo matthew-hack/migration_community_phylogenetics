@@ -1,3 +1,8 @@
+# 1. SDM download and community formation
+# This script downloads the eBird Status and Trends data for each species included in the dataset.
+# The eBirdst data is partitioned into weekly distributional rasters.
+# These weekly species rasters are aggregated into weekly bird community presence-absence matrices.
+
 library(ebirdst)
 library(terra)
 library(sf)
