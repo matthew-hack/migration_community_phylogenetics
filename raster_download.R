@@ -22,46 +22,6 @@ path <- get_species_path("example_data")
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
 
-# download a simplified example dataset for Yellow-bellied Sapsucker in Michigan
-path <- ebirdst_download(species = "example_data")
-
-# for non-example data use the species code or name instead of "example_data"
-path <- get_species_path("example_data")
-
-# seasonal, low res, mean relative abundance
-abd_seasonal_mean <- load_raster(path, product = "abundance", 
-                                 period = "seasonal", metric = "mean", 
-                                 resolution = "lr")
-
-# season that each layer corresponds to
-names(abd_seasonal_mean)
-
-# just the breeding season layer
-abd_seasonal_mean[["breeding"]]
-
-# seasonal, low res, max occurrence
-occ_seasonal_max <- load_raster(path, product = "occurrence", 
-                                period = "seasonal", metric = "max", 
-                                resolution = "lr")
-
-# full year, low res, maximum relative abundance
-abd_fy_max <- load_raster(path, product = "abundance", 
-                          period = "full-year", metric = "max", 
-                          resolution = "lr")
-
-
-# Working with rasters module
-
-# load seasonal mean relative abundance at low res
-abd_seasonal <- load_raster(path, 
-                            product = "abundance", 
-                            period = "seasonal",
-                            metric = "mean",
-                            resolution = "lr")
-
-abd_breeding <- abd_seasonal[["breeding"]]
-
-
 # define species whose data is to be downloaded from eBirdst
 species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
                    "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
@@ -212,7 +172,8 @@ ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = 
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
-
+#run loop that generates weekly aggregated csvs representing presence and absence of each species in the dataset
+### WARNING: takes a very long time to run, as long as 2 days
 for(j in 1:52){
  for(i in 1:length(species_names)){
    if(file.exists(paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv")) == FALSE){
@@ -269,7 +230,7 @@ data.table::fwrite(community45, file = "output/community_data/community_45.csv")
 
 #create community matrices
 
-# create week 2 community matrix
+# create week 52 community matrix
 wewpew_52_agg_df <- read.csv("output/species_data/52/wewpew_52_agg.csv", row.names=1)
 community52 <- data.frame(matrix(nrow=nrow(wewpew_52_agg_df),ncol=length(species_passerines)))
 rownames(community52) <- rownames(wewpew_52_agg_df)
