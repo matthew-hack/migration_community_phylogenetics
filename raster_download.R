@@ -22,6 +22,10 @@ path <- get_species_path("example_data")
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
 
+##### DOWNLOAD eBIRD STATUS AND TRENDS DATA #####
+
+# This data was downloaded using the 2021 eBirdst packages; a newer version should be substituted for newer downloads.
+
 # define species whose data is to be downloaded from eBirdst
 species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
                    "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
@@ -161,6 +165,11 @@ species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_
                         "Pheucticus_ludovicianus", "Pheucticus_melanocephalus", "Passerina_caerulea",
                         "Passerina_amoena", "Passerina_cyanea", "Passerina_versicolor",
                         "Passerina_ciris", "Spiza_americana")
+
+#download complete eBirdst data package for each species
+for(i in 1:length(species_codes)){
+ str_sub(species_codes[i]) <- ebirdst_download(species = species_codes[i]) #requires a valid access key set up on eBird Status and Trends
+}
 
 #load example raster
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
