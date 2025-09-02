@@ -200,13 +200,6 @@ for(j in 1:52){ #iterates over each week of the year
  }
 }
 
-eursta_45 <- subset(load_raster("data/ebirdst/2021/eursta", product = "abundance", resolution = "hr"), 45)
-eursta_45_us <- crop(eursta_45, us)
-eursta_45_proj <- project(eursta_45_us, crs, method = "near")
-eursta_45_agg <- aggregate(eursta_45_proj, fact=2)
-eursta_45_agg_df <- as.data.frame(eursta_45_agg)
-write.csv(eursta_45_agg_df, file="output/species_data/45/eursta_45_agg.csv")
-
 aggdfs45 <- rep(NA, length(species_names))
 agg45nrow <- rep(NA, length(species_names))
 for(i in 1:length(species_names)){
@@ -218,8 +211,6 @@ for(i in 1:length(species_names)){
 agg45nrow[116] <- nrow(eursta_45_agg_df)
 species_names[which(agg45nrow == min(agg45nrow))[1]] 
 
-
-#species_names[which(agg38nrow == 13163898)[1]] 
 
 #reduce to minimum shared length for week 38
 for(i in 1:length(species_names)){
@@ -238,7 +229,7 @@ data.table::fwrite(community45, file = "output/community_data/community_45.csv")
 
 
 
-#create community matrices
+##### CREATE WEEKLY COMMUNITY MATRICES #####
 
 # create week 52 community matrix
 wewpew_52_agg_df <- read.csv("output/species_data/52/wewpew_52_agg.csv", row.names=1)
