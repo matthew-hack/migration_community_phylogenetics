@@ -32,18 +32,6 @@ path <- ebirdst_download(species = "example_data")
 # for non-example data use the species code or name instead of "example_data"
 path <- get_species_path("example_data")
 
-occ_lr <- load_raster(path, product = "occurrence", resolution = "lr")
-occ_lr
-
-parse_raster_dates(occ_lr)
-
-# weekly, low res, abundance confidence intervals
-abd_lower <- load_raster(path, product = "abundance", metric = "lower", 
-                         resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", metric = "upper", 
-                         resolution = "lr")
-
-
 # seasonal, low res, mean relative abundance
 abd_seasonal_mean <- load_raster(path, product = "abundance", 
                                  period = "seasonal", metric = "mean", 
@@ -77,102 +65,11 @@ abd_seasonal <- load_raster(path,
 
 abd_breeding <- abd_seasonal[["breeding"]]
 
-# boundary polygon for michigan
-mi <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  filter(postal == "MI") %>% 
-  # project to same coordinate reference system as the raster data
-  st_transform(st_crs(abd_seasonal))
-
-# crop data to michigan
-abd_breeding_mi <- crop(abd_breeding, mi)
-
 # load the mapping parameters
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
 
-# transform to the custom projection using nearest neighbor resampling
-abd_projected <- project(abd_breeding_mi, crs, method = "near")
-
-# quantiles of non-zero values
-v <- values(abd_projected)
-v <- v[!is.na(v) & v > 0]
-bins <- quantile(v, seq(0, 1, by = 0.1))
-# add a bin for 0
-bins <- c(0, bins)
-
-# status and trends palette
-pal <- abundance_palette(length(bins) - 2)
-# add a color for zero
-pal <- c("#e6e6e6", pal)
-
-# natural earth boundaries
-countries <- ne_countries(returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-states <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-
-# define the map extent with the michigan polygon
-mi_ext <- mi %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-labels <- quantile(bins, c(0, 0.5, 1))
-label_breaks <- seq(0, 1, length.out = length(bins))
-
-abd_median <- load_raster(path, product = "abundance", 
-                          metric = "median", resolution = "lr")
-abd_lower <- load_raster(path, product = "abundance",
-                         metric = "lower", resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", 
-                         metric = "upper", resolution = "lr")
-
-
-# download list of passerines
-
-species_codes <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
-                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
-                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
-                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
-                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
-                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
-                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
-                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
-                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
-                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
-                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
-                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
-                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
-
-# "whcsee1", "blueth
-
+# define species whose data is to be downloaded from eBirdst
 species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
                    "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
                    "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
@@ -212,7 +109,7 @@ species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "
                    "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
                    "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
 
-
+#create vector of scientific names of the above species for interfacing with phylogenetic trees downstream
 species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_cooperi",
                         "Contopus_pertinax", "Contopus_sordidulus", "Contopus_virens",
                         "Empidonax_flaviventris", "Empidonax_virescens", "Empidonax_alnorum",
@@ -313,30 +210,31 @@ species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_
                         "Passerina_amoena", "Passerina_cyanea", "Passerina_versicolor",
                         "Passerina_ciris", "Spiza_americana")
 
-
+#load example raster
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
                                          period = "seasonal", metric = "mean", 
                                          resolution = "hr")
 
+#use example raster to crop to US boundaries
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
 
-#for(j in 1:52){
-#  for(i in 1:length(species_names)){
-#    if(file.exists(paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv")) == FALSE){
-#      assign(paste0(species_names[i], "_", j), subset(load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", resolution = "hr"), j))
-#      assign(paste0(species_names[i], "_", j, "_us"), crop(get(paste0(species_names[i], "_", j)), us))
-#      assign(paste0(species_names[i], "_", j, "_proj"), project(get(paste0(species_names[i], "_", j, "_us")), crs, method="near"))
-#      assign(paste0(species_names[i], "_", j, "_agg"), aggregate(get(paste0(species_names[i], "_", j, "_proj")), fact=2))
-#      assign(paste0(species_names[i], "_", j, "_agg_df"), as.data.frame(get(paste0(species_names[i], "_", j, "_agg"))))
-#      write.csv(get(paste0(species_names[i], "_", j, "_agg_df")), file = paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv"))
-#    }
-#    else {
-#      print("File exists")
-#    }
-#  }
-#}
+for(j in 1:52){
+ for(i in 1:length(species_names)){
+   if(file.exists(paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv")) == FALSE){
+     assign(paste0(species_names[i], "_", j), subset(load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", resolution = "hr"), j))
+     assign(paste0(species_names[i], "_", j, "_us"), crop(get(paste0(species_names[i], "_", j)), us))
+     assign(paste0(species_names[i], "_", j, "_proj"), project(get(paste0(species_names[i], "_", j, "_us")), crs, method="near"))
+     assign(paste0(species_names[i], "_", j, "_agg"), aggregate(get(paste0(species_names[i], "_", j, "_proj")), fact=2))
+     assign(paste0(species_names[i], "_", j, "_agg_df"), as.data.frame(get(paste0(species_names[i], "_", j, "_agg"))))
+     write.csv(get(paste0(species_names[i], "_", j, "_agg_df")), file = paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv"))
+   }
+   else {
+     print("File exists")
+   }
+ }
+}
 
 eursta_45 <- subset(load_raster("data/ebirdst/2021/eursta", product = "abundance", resolution = "hr"), 45)
 eursta_45_us <- crop(eursta_45, us)
