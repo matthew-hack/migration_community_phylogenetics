@@ -1,7 +1,7 @@
 # 1. SDM download and community formation
 # This script downloads the eBird Status and Trends data for each species included in the dataset.
 # The eBirdst data is partitioned into weekly distributional rasters.
-# These weekly species rasters are aggregated into weekly bird community presence-absence matrices.
+# These weekly species rasters are aggregated into weekly bird community matrices.
 
 #load required libraries
 required.libraries <- c("ebirdst","terra","sf","dplyr","tidyr","rnaturalearth",
@@ -29,31 +29,30 @@ species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "
                    "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
                    "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
                    "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
+                   "logshr", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", "flsjay", 
+                   "issjay", "cowscj1", "bkbmag1", "yebmag", "clanut", "amecro", "fiscro", "chirav", 
+                   "comrav", "carchi", "bkcchi", "mouchi", "mexchi", "chbchi", "borchi2", "gyhchi", 
+                   "britit", "oaktit", "juntit1", "tuftit", "blctit4", "verdin", "horlar", "nrwswa", 
+                   "purmar", "treswa", "vigswa", "banswa", "cliswa", "cavswa", "rewbul", "arcwar1",
+                   "bushti", "wrenti", "ruckin", "gockin", "rebnut", "whbnut", "pygnut", "bnhnut", 
+                   "brncre", "buggna", "bktgna", "calgna", "bkcgna", "rocwre", "canwre", "houwre", 
+                   "winwre3", "marwre", "carwre", "bewwre", "cacwre", "amedip", "eursta", "commyn", 
+                   "grycat", "cubthr", "brnthr", "lobthr", "benthr", "calthr", "lecthr", "crithr", 
+                   "sagthr", "normoc", "easblu", "wesblu", "moublu", "towsol", "veery", "gycthr", 
+                   "bicthr", "swathr", "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", 
+                   "cedwax", "phaino", "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", 
+                   "amepip", "sprpip", "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", 
+                   "purfin", "casfin","comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", 
+                   "lawgol", "amegfi", "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", 
+                   "ruwspa", "botspa", "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", 
+                   "bkcspa", "fiespa", "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", 
+                   "foxspa", "daejun", "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "belspa2", 
+                   "vesspa", "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", 
+                   "sonspa", "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", 
+                   "spotow", "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", 
+                   "hooori", "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", 
+                   "tribla", "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", 
+                   "grtgra", "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "bawwar", "prowar",
                    "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
                    "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
                    "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
@@ -172,19 +171,21 @@ ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = 
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
-#run loop that generates weekly aggregated csvs representing presence and absence of each species in the dataset
-### WARNING: takes a very long time to run, as long as 2 days
-for(j in 1:52){
- for(i in 1:length(species_names)){
-   if(file.exists(paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv")) == FALSE){
-     assign(paste0(species_names[i], "_", j), subset(load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", resolution = "hr"), j))
-     assign(paste0(species_names[i], "_", j, "_us"), crop(get(paste0(species_names[i], "_", j)), us))
-     assign(paste0(species_names[i], "_", j, "_proj"), project(get(paste0(species_names[i], "_", j, "_us")), crs, method="near"))
-     assign(paste0(species_names[i], "_", j, "_agg"), aggregate(get(paste0(species_names[i], "_", j, "_proj")), fact=2))
-     assign(paste0(species_names[i], "_", j, "_agg_df"), as.data.frame(get(paste0(species_names[i], "_", j, "_agg"))))
-     write.csv(get(paste0(species_names[i], "_", j, "_agg_df")), file = paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv"))
+##### PROCESS WEEKLY SPECIES DISTRIBUTIONAL RASTERS #####
+
+#run command that generates weekly aggregated csvs representing presence and absence of each species in the dataset
+### WARNING: takes a very long time to run on initial pass (as long as 2 days depending on computer's processing power)
+for(j in 1:52){ #iterates over each week of the year
+ for(i in 1:length(species_names)){ #iterates across each species
+   if(file.exists(paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv")) == FALSE){ #initializes processing loop if aggregated weekly species raster does not yet exist
+     assign(paste0(species_names[i], "_", j), subset(load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", resolution = "hr"), j)) #load abundance raster during iterated week of the year
+     assign(paste0(species_names[i], "_", j, "_us"), crop(get(paste0(species_names[i], "_", j)), us)) #crop rasters
+     assign(paste0(species_names[i], "_", j, "_proj"), project(get(paste0(species_names[i], "_", j, "_us")), crs, method="near")) #reproject rasters to CRS used by eBirdst 
+     assign(paste0(species_names[i], "_", j, "_agg"), aggregate(get(paste0(species_names[i], "_", j, "_proj")), fact=2)) #aggregate rasters into appropriate scale for community analyses.
+     assign(paste0(species_names[i], "_", j, "_agg_df"), as.data.frame(get(paste0(species_names[i], "_", j, "_agg")))) #convert rasters into dataframe format so they can be exported as CSVs
+     write.csv(get(paste0(species_names[i], "_", j, "_agg_df")), file = paste0("output/species_data/", j, "/", species_names[i], "_", j, "_agg.csv")) #export aggregated weekly species rasters as CSVs
    }
-   else {
+   else { #skips regeneration of csv if file already exists
      print("File exists")
    }
  }
