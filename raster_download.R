@@ -167,9 +167,11 @@ species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_
                         "Passerina_ciris", "Spiza_americana")
 
 #download complete eBirdst data package for each species
-for(i in 1:length(species_codes)){
- str_sub(species_codes[i]) <- ebirdst_download(species = species_codes[i]) #requires a valid access key set up on eBird Status and Trends
+for(i in 1:length(species_names)){
+ str_sub(species_names[i]) <- ebirdst_download(species = species_names[i]) #requires a valid access key set up on eBird Status and Trends
 }
+#this download command generates a folder that can be located using the command ebirdst_data_dir(). File can be moved to path "data/ebirdst/2021"
+#each species' complete status & trends data is downloaded into a separate folder with the name given in the species_names raster
 
 #load example raster
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
