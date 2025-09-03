@@ -200,47 +200,51 @@ for(j in 1:52){ #iterates over each week of the year
  }
 }
 
-aggdfs45 <- rep(NA, length(species_names))
-agg45nrow <- rep(NA, length(species_names))
+##### TRIM SONGBIRD DATASETS #####
+
+#Each weekly eBirdst output varies slightly in scope; run these commands to trim larger weekly species csvs to only include communities for which data exists for each species.
+#Rerun each week separately. Below represents an example week (week 45), which should be adjusted for the output for each week of the year.
+#Warning: process can take at least an hour for each week.
+
+#create list consisting of all species datasets in specified week
+all_week_45_datasets <- rep(NA, length(species_names)) 
+#initialize vector representing number of communities encompassed by each species' weekly eBirdst coverage
+week_45_number_of_rows <- rep(NA, length(species_names)) 
+#run loop to extract number of communities in each dataset
+for(i in 1:length(species_names)){  #initialize loop to generate list of all species datasets in specified week, and extract the number of communities represented in each dataset
+  assign(paste0(species_names[i], "_45_agg_df"), read.csv(paste0("output/species_data/45/", species_names[i], "_45_agg.csv"), row.names = 1)) #load all species datasets for given week
+  all_week_45_datasets[i] <- get(paste0(species_names[i], "_45_agg_df")) #add species' datasets to list
+  week_45_number_of_rows[i] <- nrow(as.data.frame(all_week_45_datasets[i])) #extract number of rows in each dataset and store in list
+}
+#identify a species (the first taxonomically) that contains the minimum number of communities encompassed by each species to trim datasets of species with greater coverage
+species_names[which(week_45_number_of_rows == min(week_45_number_of_rows))[1]]
+
+
+#generate reduced distributional datasets for each species encompassing the communities for which data exists for each species
 for(i in 1:length(species_names)){
-  assign(paste0(species_names[i], "_45_agg_df"), read.csv(paste0("output/species_data/45/", species_names[i], "_45_agg.csv"), row.names = 1))
-  aggdfs45[i] <- get(paste0(species_names[i], "_45_agg_df"))
-  agg45nrow[i] <- nrow(as.data.frame(aggdfs45[i]))
+  assign(paste0(species_names[i], "_45_reduced"), #create reduced distributional datasets
+         get(paste0(species_names[i], "_45_agg_df"))[rownames(get(paste0(species_names[i], "_45_agg_df"))) %in% rownames(yebfly_45_agg_df),]) #trim to communities represented in each dataset; substitute individual dataset depending on results of previous step
+  write.csv(get(paste0(species_names[i], "_45_reduced")), file = paste0("output/species_data/45/", species_names[i], "_45_reduced.csv")) #export reduced datasets
 }
-
-agg45nrow[116] <- nrow(eursta_45_agg_df)
-species_names[which(agg45nrow == min(agg45nrow))[1]] 
-
-
-#reduce to minimum shared length for week 38
-for(i in 1:length(species_names)){
-  assign(paste0(species_names[i], "_45_reduced"), 
-         get(paste0(species_names[i], "_45_agg_df"))[rownames(get(paste0(species_names[i], "_45_agg_df"))) %in% rownames(yebfly_45_agg_df),])
-  write.csv(get(paste0(species_names[i], "_45_reduced")), file = paste0("output/species_data/45/", species_names[i], "_45_reduced.csv"))
-}
-
-community45 <- data.frame(matrix(nrow=nrow(yebfly_45_agg_df),ncol=length(species_passerines)))
-rownames(community45) <- rownames(yebfly_45_agg_df)
-colnames(community45) <- species_passerines
-for(i in 1:ncol(community45)){
-  community45[,i] <- get(paste0(species_names[i], "_45_reduced"))
-}
-data.table::fwrite(community45, file = "output/community_data/community_45.csv")
-
-
 
 ##### CREATE WEEKLY COMMUNITY MATRICES #####
 
-# create week 52 community matrix
-wewpew_52_agg_df <- read.csv("output/species_data/52/wewpew_52_agg.csv", row.names=1)
-community52 <- data.frame(matrix(nrow=nrow(wewpew_52_agg_df),ncol=length(species_passerines)))
-rownames(community52) <- rownames(wewpew_52_agg_df)
-colnames(community52) <- species_passerines
+#Each community spreadsheet is created individually, due to different species being used to trim the datasets. Example continued for week 45.
+#Warning: process can take multiple hours per community.
 
-#create reduced dataframe
-for(i in 1:ncol(community52)){
-  community52[,i] <- read.csv(paste0("output/species_data/52/", species_names[i], "_52_reduced.csv"), row.names=1)
+#create week 45 community matrix
+#load first taxonomic species at minimum community size
+yebfly_45_agg_df <- read.csv("output/species_data/45/yebfly_45_agg.csv", row.names=1) #reread individual dataset if not already loaded
+#create spreadsheet with number of rows = number of communities, and number of columns = number of species
+community45 <- data.frame(matrix(nrow=nrow(yebfly_45_agg_df),ncol=length(species_passerines))) 
+#label each row as an individually identified community
+rownames(community45) <- rownames(yebfly_45_agg_df) 
+#label each column as an individual species (using the scientific names, rather than the six-letter codes, will be important for downstream phylogenetic community analyses)
+colnames(community45) <- species_passerines 
+
+#populate week 45 community matrix
+for(i in 1:ncol(community45)){
+  community45[,i] <- get(paste0(species_names[i], "_45_reduced")) #populate each column with individual species data (species datasets created or loaded in previous step)
 }
-data.table::fwrite(community52, file = "output/community_data/community_52.csv")
-
-
+#export weekly community data matrix
+data.table::fwrite(community45, file = "output/community_data/community_45.csv")
