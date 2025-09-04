@@ -189,23 +189,20 @@ community1 <- data.table::fread("output/community_data/community_1.csv")
 #assign rownames to match the individually identified communities
 rownames(community1) <- rownames(wewpew_1_agg_df)
 #assign correct rownames
-community1 <- community1[, !(names(community1) %in% "V1")]
+community1 <- community1[, !(names(community1) %in% "V1"), drop = FALSE]
 colnames(community1)
 
-# Using picante -- clean trees/comm
+#clean phylogenetic trees and community matrix using picante functions
+#clean phylogenetic tree
 passerine.picCleanTree <- match.phylo.comm(phy = passerine.tree, 
                                            comm = community1)$phy
+#export tree
 write.tree(passerine.picCleanTree, file = "passerine.picCleanTree")
+#clean community matrix
 passerine.picCleanComm <- match.phylo.comm(phy = passerine.tree, 
                                            comm = community1)$comm
 
-# Phylogenetic alpha diversity
-
-# passerine.1.PD <- pd(samp = passerine.picCleanComm,
-#                        tree = passerine.picCleanTree,
-#                        include.root = FALSE)
-# write.csv(passerine.1.PD, "output/tables/passerine.1.PD.csv")
-#passerine.1.PD <- read.csv("output/tables/ passerine.1.PD.csv")
+##### RUN COMMUNITY PHYLOGENETIC METRICS ON CONTINENTAL SPECIES POOL #####
 
 #subsample dataframe
 set.seed(52)
