@@ -188,9 +188,8 @@ wewpew_1_agg_df <- read.csv("output/species_data/1/wewpew_1_agg.csv", row.names 
 community1 <- data.table::fread("output/community_data/community_1.csv")
 #assign rownames to match the individually identified communities
 rownames(community1) <- rownames(wewpew_1_agg_df)
-#assign correct rownames
-community1 <- community1[, !(names(community1) %in% "V1"), drop = FALSE]
-colnames(community1)
+#remove "V1" columns if they have been generated in loading in community data
+community1 <- data.frame(community1[,-c("V1")])
 
 #clean phylogenetic trees and community matrix using picante functions
 #clean phylogenetic tree
@@ -203,127 +202,45 @@ passerine.picCleanComm <- match.phylo.comm(phy = passerine.tree,
                                            comm = community1)$comm
 
 ##### RUN COMMUNITY PHYLOGENETIC METRICS ON CONTINENTAL SPECIES POOL #####
+#names and file structure specific to community 1 -- each community data has its own folder in the "output/tables" file path
 
 #subsample dataframe
 set.seed(52)
-ints <- seq(1, nrow(community1), 1) #create vector of positions
-intsample <- sample(ints, 25000) #sample positions
+#create vector of positions in community file
+ints <- seq(1, nrow(community1), 1) 
+#subsample 25000 communities for computatinal purposes
+intsample <- sample(ints, 25000)
 subsampled_communities <- as.numeric(row.names(passerine.picCleanComm[intsample,]))
 write.csv(as.data.frame(subsampled_communities), "output/tables/1/subsampled_communities.csv")
+#reload subsampled communities if already created
 intsample_df <- read.csv("output/tables/1/subsampled_communities.csv", row.names=1)
 intsample <- unlist(as.vector(intsample_df))
 
 #randomization -- SES PD null model
-passerine.1.picCleanComm.subsample <- passerine.picCleanComm[rownames(passerine.picCleanComm) %in% as.character(intsample), ] #feel free to modify
-# write.csv(passerine.1.picCleanComm.subsample, "passerine.1.picCleanComm.subsample")
-# passerine.1.ses.pd.subsample <- ses.pd(samp = passerine.1.picCleanComm.subsample,
-#                                        tree = passerine.picCleanTree,
-#                                        null.model = "taxa.labels",
-#                                        runs = 100)
-# write.csv(passerine.1.ses.pd.subsample, "output/tables/1/passerine.pd.1.subsample.csv")
-#passerine.1.ses.pd.subsample <- read.csv("output/tables/1/passerine.pd.1.subsample.csv", row.names=1, header=TRUE)
+passerine.1.picCleanComm.subsample <- passerine.picCleanComm[rownames(passerine.picCleanComm) %in% as.character(intsample), ] 
 
-
-# Create a Phylogenetic Distance Matrix
+#create a phylogenetic distance matrix
 passerine.cophenDist <- cophenetic.phylo(passerine.picCleanTree)
 
+#generate MPD (mean phylogenetic distance) values for each community at continental species pool
+passerine.ses.mpd.1 <- ses.mpd(passerine.1.picCleanComm.subsample,
+                                passerine.cophenDist,
+                                null.model = "taxa.labels",
+                                abundance.weighted = FALSE,
+                                runs = 100)
+#export and reread data frame containing MPD values
+write.csv(passerine.ses.mpd.1, "output/tables/1/passerine.ses.mpd.1.csv")
+passerine.ses.mpd.1 <- read.csv("output/tables/1/passerine.ses.mpd.1.csv", row.names=1, header=TRUE)
 
-#NRI on summer community
-# passerine.ses.mpd.1 <- ses.mpd(passerine.1.picCleanComm.subsample,
-#                                 passerine.cophenDist,
-#                                 null.model = "taxa.labels",
-#                                 abundance.weighted = FALSE,
-#                                 runs = 100)
-# 
-# write.csv(passerine.ses.mpd.1, "output/tables/1/passerine.ses.mpd.1_redo.csv")
-#passerine.ses.mpd.1 <- read.csv("output/tables/1/passerine.ses.mpd.1_redo.csv", row.names=1, header=TRUE)
-# 
-# 
-# 
-# ### Nearest Taxon Index Calculations
-# 
-# #NTI on summer
-# passerine.ses.mntd.1 <- ses.mntd(passerine.1.picCleanComm.subsample,
-#                                   passerine.cophenDist,
-#                                   null.model = "taxa.labels",
-#                                   abundance.weighted = FALSE,
-#                                   runs = 100)
-# write.csv(passerine.ses.mntd.1, "output/tables/1/passerine.ses.mntd.1_redo.csv")
-# passerine.ses.mntd.1 <- read.csv("output/tables/1/passerine.ses.mntd.1_redo.csv", row.names=1, header=TRUE)
-
-
-
-
-#load in minimum length df
-#wewpew_52_agg_df <- read.csv("output/species_data/52/wewpew_52_agg.csv", row.names = 1)
-#read existing community table
-#community52 <- data.table::fread("output/community_data/community_52.csv")
-#assign rownames
-#rownames(community52) <- rownames(wewpew_52_agg_df)
-#rewrite community table with row names
-#data.table::fwrite(community52, file = "output/community_data/community_52.csv", row.names = TRUE)
-#reread community table
-#community52 <- data.table::fread("output/community_data/community_52.csv")
-#assign correct rownames
-#community52 <- data.frame(community52[,-1], row.names = community52$V1)
-
-# Using picante -- clean trees/comm
-#passerine.picCleanTree <- match.phylo.comm(phy = passerine.tree, 
-#                                           comm = community52)$phy
-#passerine.picCleanComm <- match.phylo.comm(phy = passerine.tree, 
-#                                           comm = community52)$comm
-
-# Phylogenetic alpha diversity
-
-# passerine.52.PD <- pd(samp = passerine.picCleanComm, 
-#                       tree = passerine.picCleanTree,
-#                       include.root = FALSE)
-# write.csv(passerine.52.PD, "output/tables/52/passerine.52.PD.csv")
-#passerine.2.PD <- read.csv("output/tables/2/passerine.2.PD.csv")
-
-#subsample dataframe
-#ints <- seq(1, nrow(community52), 1) #create vector of positions
-#intsample <- sample(ints, 25000) #sample positions
-
-#randomization -- SES PD null model
-#passerine.52.picCleanComm.subsample <- passerine.picCleanComm[intsample,] #feel free to modify
-#passerine.52.ses.pd.subsample <- ses.pd(samp = passerine.52.picCleanComm.subsample, 
-#                                        tree = passerine.picCleanTree, 
-#                                        null.model = "taxa.labels", 
-#                                        runs = 100)
-#write.csv(passerine.52.ses.pd.subsample, "output/tables/52/passerine.pd.52.subsample.csv")
-#passerine.1.ses.pd.subsample <- read.csv("output/tables/1/passerine.pd.1.subsample.csv", row.names=1, header=TRUE)
-
-
-# Create a Phylogenetic Distance Matrix
-#passerine.cophenDist <- cophenetic.phylo(passerine.picCleanTree)
-
-
-#NRI on summer community
-#passerine.ses.mpd.52 <- ses.mpd(passerine.52.picCleanComm.subsample, 
-#                                passerine.cophenDist, 
-#                                null.model = "taxa.labels", 
-#                                abundance.weighted = FALSE, 
-#                                runs = 100)
-#
-#write.csv(passerine.ses.mpd.52, "output/tables/52/passerine.ses.mpd.52.csv")
-#passerine.ses.mpd.1 <- read.csv("output/tables/1/passerine.ses.mpd.1.csv", row.names=1, header=TRUE)
-
-
-
-### Nearest Taxon Index Calculations
-
-#NTI on summer
-#passerine.ses.mntd.52 <- ses.mntd(passerine.52.picCleanComm.subsample, 
-#                                  passerine.cophenDist, 
-#                                  null.model = "taxa.labels", 
-#                                  abundance.weighted = FALSE, 
-#                                  runs = 100) 
-#write.csv(passerine.ses.mntd.52, "output/tables/52/passerine.ses.mntd.52.csv")
-#passerine.ses.mntd.1 <- read.csv("output/tables/1/passerine.ses.mntd.1.csv", row.names=1, header=TRUE)
-
-
-
+#generate MNTD (mean nearest taxa distance) values for each community at continental species pool
+passerine.ses.mntd.1 <- ses.mntd(passerine.1.picCleanComm.subsample,
+                                  passerine.cophenDist,
+                                  null.model = "taxa.labels",
+                                  abundance.weighted = FALSE,
+                                  runs = 100)
+#export and reread data frame containing MNTD values
+write.csv(passerine.ses.mntd.1, "output/tables/1/passerine.ses.mntd.1.csv")
+passerine.ses.mntd.1 <- read.csv("output/tables/1/passerine.ses.mntd.1.csv", row.names=1, header=TRUE)
 
 # visualizations
 
@@ -1268,4 +1185,3 @@ for(i in 1:nrow(passerine.ses.mpd.1.continental)){
 #        plot.title = element_text(hjust = 0.5)) +
 #  labs(x = "", y = "")
 #dev.off()
-
