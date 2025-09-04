@@ -1,203 +1,59 @@
-#weekly_namerican_passerine_communities_1_redo.R
+# 2. Weekly community passerine phylogenetic metric generation
+# This script runs all community phylogenetic metrics for one week of the year (week 1)
+# NRI and NTI metrics generated for each community at two scales of species pools
+# Creates visualizations for spatial distribution of NRI and NTI metrics at both species pools
+# Script can be replicated for other 51 weeks of the year with minimal substitutions (indicated below) 
 
-library(ebirdst)
-library(terra)
-library(sf)
-library(dplyr)
-library(tidyr)
-library(rnaturalearth)
-library(geodata)
-library(ggplot2)
-library(fields)
-library(stringr)
-library(TreeTools)
-library(viridis)
-library(rgdal)
-library(raster)
-library(devtools)
-#devtools::install_github("ropensci/rnaturalearthhires")
+#load required libraries
+required.libraries <- c("ebirdst","terra","sf","dplyr","tidyr","rnaturalearth",
+                        "geodata","ggplot2","fields","stringr","TreeTools",
+                        "viridis","rgdal","raster","devtools","data.table",
+                        "ape","picante","pez","phytools","vegan","adephylo",
+                        "phylobase","geiger","mvMORPH","OUwie","hisse",
+                        "BAMMtools","phylosignal","Biostrings","kableExtra",
+                        "betapart","gridExtra","reshape2","data.table","ggmap")
+
+lapply(required.libraries, require, character.only = TRUE)
+
 extract <- terra::extract
-project <- terra::project #possible source of confusion regarding rgdal for later
+project <- terra::project 
 
-# Pure intro stuff
-
-# download a simplified example dataset for Yellow-bellied Sapsucker in Michigan
-path <- ebirdst_download(species = "example_data")
-
-# for non-example data use the species code or name instead of "example_data"
+# load the mapping parameters to generate necessary CRS
 path <- get_species_path("example_data")
-
-occ_lr <- load_raster(path, product = "occurrence", resolution = "lr")
-occ_lr
-
-parse_raster_dates(occ_lr)
-
-# weekly, low res, abundance confidence intervals
-abd_lower <- load_raster(path, product = "abundance", metric = "lower", 
-                         resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", metric = "upper", 
-                         resolution = "lr")
-
-
-# seasonal, low res, mean relative abundance
-abd_seasonal_mean <- load_raster(path, product = "abundance", 
-                                 period = "seasonal", metric = "mean", 
-                                 resolution = "lr")
-
-# season that each layer corresponds to
-names(abd_seasonal_mean)
-
-# just the breeding season layer
-abd_seasonal_mean[["breeding"]]
-
-# seasonal, low res, max occurrence
-occ_seasonal_max <- load_raster(path, product = "occurrence", 
-                                period = "seasonal", metric = "max", 
-                                resolution = "lr")
-
-# full year, low res, maximum relative abundance
-abd_fy_max <- load_raster(path, product = "abundance", 
-                          period = "full-year", metric = "max", 
-                          resolution = "lr")
-
-
-# Working with rasters module
-
-# load seasonal mean relative abundance at low res
-abd_seasonal <- load_raster(path, 
-                            product = "abundance", 
-                            period = "seasonal",
-                            metric = "mean",
-                            resolution = "lr")
-
-abd_breeding <- abd_seasonal[["breeding"]]
-
-# boundary polygon for michigan
-mi <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  filter(postal == "MI") %>% 
-  # project to same coordinate reference system as the raster data
-  st_transform(st_crs(abd_seasonal))
-
-# crop data to michigan
-abd_breeding_mi <- crop(abd_breeding, mi)
-
-# load the mapping parameters
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
 
-# transform to the custom projection using nearest neighbor resampling
-abd_projected <- project(abd_breeding_mi, crs, method = "near")
-
-# quantiles of non-zero values
-v <- values(abd_projected)
-v <- v[!is.na(v) & v > 0]
-bins <- quantile(v, seq(0, 1, by = 0.1))
-# add a bin for 0
-bins <- c(0, bins)
-
-# status and trends palette
-pal <- abundance_palette(length(bins) - 2)
-# add a color for zero
-pal <- c("#e6e6e6", pal)
-
-# natural earth boundaries
-countries <- ne_countries(returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-states <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-
-# define the map extent with the michigan polygon
-mi_ext <- mi %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-labels <- quantile(bins, c(0, 0.5, 1))
-label_breaks <- seq(0, 1, length.out = length(bins))
-
-abd_median <- load_raster(path, product = "abundance", 
-                          metric = "median", resolution = "lr")
-abd_lower <- load_raster(path, product = "abundance",
-                         metric = "lower", resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", 
-                         metric = "upper", resolution = "lr")
-
-# download list of passerines
-
-species_codes <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
-                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
-                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
-                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
-                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
-                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
-                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
-                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
-                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
-                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
-                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
-                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
-                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
-
-# "whcsee1", "blueth
-
+# load list of species names to be included in dataset
 species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
                    "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
                    "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
                    "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
                    "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
                    "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
+                   "logshr", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", "flsjay", 
+                   "issjay", "cowscj1", "bkbmag1", "yebmag", "clanut", "amecro", "fiscro", "chirav", 
+                   "comrav", "carchi", "bkcchi", "mouchi", "mexchi", "chbchi", "borchi2", "gyhchi", 
+                   "britit", "oaktit", "juntit1", "tuftit", "blctit4", "verdin", "horlar", "nrwswa", 
+                   "purmar", "treswa", "vigswa", "banswa", "cliswa", "cavswa", "rewbul", "arcwar1",
+                   "bushti", "wrenti", "ruckin", "gockin", "rebnut", "whbnut", "pygnut", "bnhnut", 
+                   "brncre", "buggna", "bktgna", "calgna", "bkcgna", "rocwre", "canwre", "houwre", 
+                   "winwre3", "marwre", "carwre", "bewwre", "cacwre", "amedip", "eursta", "commyn", 
+                   "grycat", "cubthr", "brnthr", "lobthr", "benthr", "calthr", "lecthr", "crithr", 
+                   "sagthr", "normoc", "easblu", "wesblu", "moublu", "towsol", "veery", "gycthr", 
+                   "bicthr", "swathr", "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", 
+                   "cedwax", "phaino", "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", 
+                   "amepip", "sprpip", "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", 
+                   "purfin", "casfin","comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", 
+                   "lawgol", "amegfi", "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", 
+                   "ruwspa", "botspa", "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", 
+                   "bkcspa", "fiespa", "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", 
+                   "foxspa", "daejun", "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "belspa2", 
+                   "vesspa", "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", 
+                   "sonspa", "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", 
+                   "spotow", "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", 
+                   "hooori", "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", 
+                   "tribla", "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", 
+                   "grtgra", "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "bawwar", "prowar",
                    "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
                    "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
                    "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
@@ -206,54 +62,7 @@ species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "
                    "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
                    "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
 
-#, "whcsee1"
-
-#download data for each species
-
-#for(i in 1:length(species_codes)){
-#  str_sub(species_codes[i]) <- ebirdst_download(species = species_codes[i])
-#}
-
-#create passerine abd seasonal mean files
-
-#for(i in 1:length(species_names)){
-#  assign(paste0(species_names[i], "_path"), get_species_path(species_names[i]))
-#}
-
-#load_raster(paste0("data/ebirdst/2021/", species_names[1]), product = "abundance",
-#            period = "seasonal", metric = "mean", 
-#            resolution = "hr")
-
-#for(i in 1:length(species_names)){
-#  assign(paste0(species_names[i], "_abd_seasonal_mean"), load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", 
-#                                                                     period = "seasonal", metric = "mean", 
-#                                                                     resolution = "hr"))
-#}
-
-#see if you can get a tree working
-
-# Check for needed packages, and install the missing ones
-required.libraries <- c("ape", "picante", 
-                        "pez", "phytools",
-                        "vegan", "adephylo", 
-                        "phylobase", "geiger", 
-                        "mvMORPH", "OUwie", 
-                        "hisse", "BAMMtools",
-                        "phylosignal", "Biostrings",
-                        "devtools","ggplot2", 
-                        "kableExtra", "betapart", "gridExtra",
-                        "reshape2")
-
-# Load all required libraries at once
-lapply(required.libraries, require, character.only = TRUE)
-
-#load in the tree
-tree.passerine <- read.nexus("phylogeny_data/jetz_passerine_tree/jetz_consensus_tree.tre")
-tree.passerine <- root(tree.passerine, outgroup = c(263:297))
-#test.tree <- read.nexus("phylogeny_data/jetz_passerine_tree/output.nex")
-#test.consensus <- consensus(test.tree, rooted=TRUE)
-plot(tree.passerine)
-
+#create vector of scientific names of the above species for interfacing with phylogenetic tree
 species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_cooperi",
                         "Contopus_pertinax", "Contopus_sordidulus", "Contopus_virens",
                         "Empidonax_flaviventris", "Empidonax_virescens", "Empidonax_alnorum",
@@ -353,52 +162,13 @@ species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_
                         "Pheucticus_ludovicianus", "Pheucticus_melanocephalus", "Passerina_caerulea",
                         "Passerina_amoena", "Passerina_cyanea", "Passerina_versicolor",
                         "Passerina_ciris", "Spiza_americana")
-#, "Sporophila_torqueola", "Luscinia svecica"
 
-
-#reduce to the species codes included in the phylogeny
-
-species_codes <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
-                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
-                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
-                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
-                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
-                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "winwre3", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa",  "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "bawwar", "prowar",
-                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
-                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
-                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
-                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
-                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
-                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
-                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
-
-#"norshr4", "wooscj2", "mexjay4", "pacwre1","sedwre1", "varthr", "sagspa1", "buwwar"
-
+#load in the phylogenetic tree
+tree.passerine <- read.nexus("phylogeny_data/jetz_passerine_tree/jetz_consensus_tree.tre")
+#define outgroup
+tree.passerine <- root(tree.passerine, outgroup = c(263:297))
+#visualize tree to make sure it is loaded in properly
+plot(tree.passerine)
 
 passerine.tree <- drop.tip(tree.passerine,tree.passerine$tip.label[-match(species_passerines, tree.passerine$tip.label)])
 
