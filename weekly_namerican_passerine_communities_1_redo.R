@@ -15,7 +15,6 @@ required.libraries <- c("ebirdst","terra","sf","dplyr","tidyr","rnaturalearth",
 
 lapply(required.libraries, require, character.only = TRUE)
 
-extract <- terra::extract
 project <- terra::project 
 
 # load the mapping parameters to generate necessary CRS
@@ -170,43 +169,24 @@ tree.passerine <- root(tree.passerine, outgroup = c(263:297))
 #visualize tree to make sure it is loaded in properly
 plot(tree.passerine)
 
+#drop tips to ensure that species in .tre file and list of species names match
 passerine.tree <- drop.tip(tree.passerine,tree.passerine$tip.label[-match(species_passerines, tree.passerine$tip.label)])
 
-#now try to get to individual weeks for each warbler (wrap)
-#this gets me to a specific week (0608)
-
-
+#load example raster
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
                                          period = "seasonal", metric = "mean", 
                                          resolution = "hr")
-
+#use example raster to crop to US boundaries
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
-#try with RFWA to cut off appropriately (most points?)
-#refwar_path <- get_species_path("refwar")
-#refwar_0608 <- subset(load_raster(refwar_path, product = "abundance", resolution = "hr"), 23)
-#refwar_0608_us <- crop(refwar_0608, us)
-#refwar_0608_proj <- project(refwar_0608_us, crs, method = "near")
-#refwar_0608_agg <- aggregate(refwar_0608_proj, fact=2)
-#plot(refwar_0608_agg, axes=FALSE)
-#refwar_0608_agg_df <- as.data.frame(refwar_0608_agg)
+##### PREPARE COMMUNITY AND PHYLOGENY FILES FOR COMMUNITY PHYLOGENETICS METRICS #####
 
-#for(i in 1:length(species_names)){
-#  assign(paste0(species_names[i], "_0608"), subset(load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", resolution = "hr"), 23))
-#  assign(paste0(species_names[i], "_0608_us"), crop(get(paste0(species_names[i], "_0608")), us))
-#  assign(paste0(species_names[i], "_0608_proj"), project(get(paste0(species_names[i], "_0608_us")), crs, method="near"))
-#  assign(paste0(species_names[i], "_0608_agg"), aggregate(get(paste0(species_names[i], "_0608_proj")), fact=2))
-#  assign(paste0(species_names[i], "_0608_agg_df"), as.data.frame(get(paste0(species_names[i], "_0608_agg"))))
-#  write.csv(get(paste0(species_names[i], "_0608_agg_df")), file = paste0("output/species_data/0608/", species_names[i], "_0608_agg.csv"))
-#}
-
-library(data.table)
-#load in minimum length df
+#load first taxonomic species at minimum community size (established in raster_download.R)
 wewpew_1_agg_df <- read.csv("output/species_data/1/wewpew_1_agg.csv", row.names = 1)
-#read existing community table
+#read existing community table (generated in raster_download.R)
 community1 <- data.table::fread("output/community_data/community_1.csv")
-#assign rownames
+#assign rownames to match the individually identified communities
 rownames(community1) <- rownames(wewpew_1_agg_df)
 #rewrite community table with row names
 data.table::fwrite(community1, file = "output/community_data/community_1.csv", row.names = TRUE)
