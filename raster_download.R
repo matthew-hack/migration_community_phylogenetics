@@ -213,13 +213,13 @@ all_week_45_datasets <- rep(NA, length(species_names))
 #initialize vector representing number of communities encompassed by each species' weekly eBirdst coverage
 week_45_number_of_rows <- rep(NA, length(species_names)) 
 #run loop to extract number of communities in each dataset
-for(i in 1:length(species_names)){  #initialize loop to generate list of all species datasets in specified week, and extract the number of communities represented in each dataset
+for(i in 286:length(species_names)){  #initialize loop to generate list of all species datasets in specified week, and extract the number of communities represented in each dataset
   assign(paste0(species_names[i], "_45_agg_df"), read.csv(paste0("output/species_data/45/", species_names[i], "_45_agg.csv"), row.names = 1)) #load all species datasets for given week
   all_week_45_datasets[i] <- get(paste0(species_names[i], "_45_agg_df")) #add species' datasets to list
   week_45_number_of_rows[i] <- nrow(as.data.frame(all_week_45_datasets[i])) #extract number of rows in each dataset and store in list
 }
 #identify a species (the first taxonomically) that contains the minimum number of communities encompassed by each species to trim datasets of species with greater coverage
-species_names[which(week_45_number_of_rows == min(week_45_number_of_rows))[1]]
+species_names[which(week_45_number_of_rows == min(week_45_number_of_rows))[1]] #returns yellow-bellied flycatcher (yebfly) for week 45
 
 
 #generate reduced distributional datasets for each species encompassing the communities for which data exists for each species
