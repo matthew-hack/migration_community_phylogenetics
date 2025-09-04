@@ -188,13 +188,9 @@ wewpew_1_agg_df <- read.csv("output/species_data/1/wewpew_1_agg.csv", row.names 
 community1 <- data.table::fread("output/community_data/community_1.csv")
 #assign rownames to match the individually identified communities
 rownames(community1) <- rownames(wewpew_1_agg_df)
-#rewrite community table with row names
-data.table::fwrite(community1, file = "output/community_data/community_1.csv", row.names = TRUE)
-#reread community table
-community1 <- data.table::fread("output/community_data/community_1.csv")
 #assign correct rownames
-community1 <- data.frame(community1[,-c(1:18)], row.names = community1$V1)
-head(community1)
+community1 <- community1[, !(names(community1) %in% "V1")]
+colnames(community1)
 
 # Using picante -- clean trees/comm
 passerine.picCleanTree <- match.phylo.comm(phy = passerine.tree, 
