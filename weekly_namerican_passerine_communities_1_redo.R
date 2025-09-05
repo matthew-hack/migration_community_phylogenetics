@@ -444,10 +444,7 @@ for(i in 1:37){
   }
 }
 
-
-
-
-#create joint visualizations
+##### GENERATE VISUALIZATIONS FOR SPATIAL DISTRIBUTION OF NRI AND NTI METRICS (ECOREGIONAL POOL) #####
 
 #create BCR-specific row columns
 for(i in 1:37){
@@ -482,8 +479,7 @@ week1bcrlistrows <- list(passerine.ses.mpd.1.bcr5.rows, passerine.ses.mpd.1.bcr6
                          passerine.ses.mpd.1.bcr31.rows, passerine.ses.mpd.1.bcr32.rows, passerine.ses.mpd.1.bcr33.rows, passerine.ses.mpd.1.bcr34.rows,
                          passerine.ses.mpd.1.bcr35.rows, passerine.ses.mpd.1.bcr36.rows, passerine.ses.mpd.1.bcr37.rows)
 
-
-#add columns for x coords, y coords, NRI data
+#add columns for coordinates, NRI data, and BCR
 for(i in 1:length(week1bcrlist)){
   week1bcrlist[[i]]$x <- rep(NA, nrow(week1bcrlist[[i]]))
   week1bcrlist[[i]]$y <- rep(NA, nrow(week1bcrlist[[i]]))
@@ -491,12 +487,10 @@ for(i in 1:length(week1bcrlist)){
   week1bcrlist[[i]]$BCR <- rep(NA, nrow(week1bcrlist[[i]]))
 }
 
-
-#add coords and NRI to each subsampled community
-# #valid BCRs in week 1
+#index BCRs that are present in week 1
 validBCR1 <- c(5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,1,27,28,29,30,31,32,33,34,35,36,37)
 
-
+#add coordinates, NRI data, and BCRs to each subsampled community
 for(i in 1:length(week1bcrlist)){
   for(j in 1:nrow(week1bcrlist[[i]])){
     week1bcrlist[[i]]$x[j] <- xyFromCell(wewpew_1_agg, week1bcrlistrows[[i]][j])[,1]
@@ -507,16 +501,10 @@ for(i in 1:length(week1bcrlist)){
   week1bcrlist[[i]] <- tibble::rownames_to_column(week1bcrlist[[i]], "community")
 }
 
-
-#combine into one dataframe
+#combine all subdivided NRI dataframes into one large dataframe
 combined_week_1_nri <- bind_rows(week1bcrlist)
 
-#plot community NRI
-country_map <- ggplot()+
-  geom_sf(data = countries) +
-  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-
-
+#plot community NRI (output goes into NRI Spatiotemporal Variation (Ecoregional Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.BCR.NRI.pdf')
 country_map +
   geom_point(data = combined_week_1_nri, alpha = 0.5, aes(x = x, y = y, color = NRI)) +
@@ -524,7 +512,7 @@ country_map +
                         mid = "gray90",
                         midpoint = 0, limits = c(-4,5),
                         na.value = "gray97") +
-  ggtitle("Jun 28") +
+  ggtitle("Jun 28") + #date representing center of week 26
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         axis.text.y=element_blank(),
@@ -533,10 +521,8 @@ country_map +
         plot.title = element_text(hjust = 0.5)) +
   labs(x = "", y = "")
 dev.off()
-#
-# #
-# # repeat process with NTI
-#
+
+#repeat process for ecoregional NTI data
 #create BCR-specific row columns
 for(i in 1:37){
   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
@@ -570,8 +556,7 @@ week1bcrlistrowsNTI <- list(passerine.ses.mntd.1.bcr5.rows, passerine.ses.mntd.1
                             passerine.ses.mntd.1.bcr31.rows, passerine.ses.mntd.1.bcr32.rows, passerine.ses.mntd.1.bcr33.rows, passerine.ses.mntd.1.bcr34.rows,
                             passerine.ses.mntd.1.bcr35.rows, passerine.ses.mntd.1.bcr36.rows, passerine.ses.mntd.1.bcr37.rows)
 
-
-#add columns for x coords, y coords, NTI data
+#add columns for coordinates, NTI data, and BCR
 for(i in 1:length(week1bcrlistNTI)){
   week1bcrlistNTI[[i]]$x <- rep(NA, nrow(week1bcrlistNTI[[i]]))
   week1bcrlistNTI[[i]]$y <- rep(NA, nrow(week1bcrlistNTI[[i]]))
@@ -579,8 +564,7 @@ for(i in 1:length(week1bcrlistNTI)){
   week1bcrlistNTI[[i]]$BCR <- rep(NA, nrow(week1bcrlistNTI[[i]]))
 }
 
-
-#add coords and NTI to each subsampled community
+#add coordinates, NTI data, and BCRs to each subsampled community
 for(i in 1:length(week1bcrlistNTI)){
   for(j in 1:nrow(week1bcrlistNTI[[i]])){
     week1bcrlistNTI[[i]]$x[j] <- xyFromCell(wewpew_1_agg, week1bcrlistrowsNTI[[i]][j])[,1]
@@ -591,15 +575,10 @@ for(i in 1:length(week1bcrlistNTI)){
   week1bcrlistNTI[[i]] <- tibble::rownames_to_column(week1bcrlistNTI[[i]], "community")
 }
 
-#combine into one dataframe
+#combine all subdivided NTI dataframes into one large dataframe
 combined_week_1_NTI <- bind_rows(week1bcrlistNTI)
 
-#plot community NTI
-country_map <- ggplot()+
-  geom_sf(data = countries) +
-  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-
-
+#plot community NTI (output goes into NTI Spatiotemporal Variation (Ecoregional Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.BCR.NTI.pdf')
 country_map +
   geom_point(data = combined_week_1_NTI, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
@@ -616,8 +595,7 @@ country_map +
         plot.title = element_text(hjust = 0.5)) +
   labs(x = "", y = "")
 dev.off()
-#
-#
+
 
 #re-create row names
 for(i in 1:length(week1bcrlist)){
