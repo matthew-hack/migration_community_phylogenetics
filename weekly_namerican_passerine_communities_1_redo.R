@@ -526,7 +526,7 @@ dev.off()
 #create BCR-specific row columns
 for(i in 1:37){
   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
-    assign(paste0("passerine.ses.mntd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".redo.csv"), row.names=1, header=TRUE))
+    assign(paste0("passerine.ses.mntd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".csv"), row.names=1, header=TRUE))
     assign(paste0("passerine.ses.mntd.1.bcr", i, ".rows"), as.numeric(row.names(get(paste0("passerine.ses.mntd.1.bcr", i)))))
   }
   else {
@@ -596,40 +596,23 @@ country_map +
   labs(x = "", y = "")
 dev.off()
 
+#export combined NRI and NTI dataframes for ecoregional data
+write.csv(combined_week_1_nri, "output/bcr_tables/1/combined_NRI_1.csv")
+write.csv(combined_week_1_NTI, "output/bcr_tables/1/combined_NTI_1.csv")
 
-#re-create row names
+##### ADD BCR DATA TO CONTINENTAL POOL DATAFRAMES FOR DOWNSTREAM COMPARISONS #####
+
+#create vectors of row names for each BCR
 for(i in 1:length(week1bcrlist)){
   assign(paste0("passerine.ses.mpd.1.bcr", validBCR1[i], ".rows"), week1bcrlist[[i]][,1])
   assign(paste0("passerine.ses.mntd.1.bcr", validBCR1[i], ".rows"), week1bcrlistNTI[[i]][,1])
 }
 
-#export combined NRI and NTI dataframes
-write.csv(combined_week_1_nri, "output/bcr_tables/1/combined_NRI_1.csv")
-write.csv(combined_week_1_NTI, "output/bcr_tables/1/combined_NTI_1.csv")
-
-##### replicate process with continental pool tables
-#re-import tables
-passerine.ses.mntd.1.continental <- read.csv("output/tables/1/passerine.ses.mntd.1_redo.csv", row.names=1)
-passerine.ses.mpd.1.continental <- read.csv("output/tables/1/passerine.ses.mpd.1_redo.csv", row.names=1)
-
-passerine.ses.mpd.1.continental.rows <- as.numeric(row.names(passerine.ses.mpd.1.continental))
-
-#NRI continental
-#add columns for x coords, y coords, NRI data
-passerine.ses.mpd.1.continental$x <- rep(NA, nrow(passerine.ses.mpd.1.continental))
-passerine.ses.mpd.1.continental$y <- rep(NA, nrow(passerine.ses.mpd.1.continental))
-passerine.ses.mpd.1.continental$NRI <- rep(NA, nrow(passerine.ses.mpd.1.continental))
-passerine.ses.mpd.1.continental$BCR <- rep(NA, nrow(passerine.ses.mpd.1.continental))
-
-
-#populate x and y
-for(i in 1:nrow(passerine.ses.mpd.1.continental)){
-  passerine.ses.mpd.1.continental$x[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mpd.1.continental.rows[i])[,1]
-  passerine.ses.mpd.1.continental$y[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mpd.1.continental.rows[i])[,2]
-}
-
-passerine.ses.mpd.1.continental$NRI <- -1*passerine.ses.mpd.1.continental$mpd.obs.z
-passerine.ses.mpd.1.continental <- tibble::rownames_to_column(passerine.ses.mpd.1.continental, "community")
+#add columns for BCR data
+passerine.ses.mpd.1$BCR <- rep(NA, nrow(passerine.ses.mpd.1))
+passerine.ses.mntd.1$BCR <- rep(NA, nrow(passerine.ses.mntd.1))
+passerine.ses.mpd.1 <- tibble::rownames_to_column(passerine.ses.mpd.1, "community")
+passerine.ses.mntd.1 <- tibble::rownames_to_column(passerine.ses.mntd.1, "community")
 
 #create list of BCR rows
 bcrrowlist <- list(bcr1rows, bcr2rows, bcr3rows, bcr4rows, bcr5rows, bcr6rows, bcr7rows, bcr8rows,
@@ -639,9 +622,10 @@ bcrrowlist <- list(bcr1rows, bcr2rows, bcr3rows, bcr4rows, bcr5rows, bcr6rows, b
                    bcr33rows, bcr34rows, bcr35rows, bcr36rows, bcr37rows)
 
 #match BCRs to continental community
-for(i in 1:nrow(passerine.ses.mpd.1.continental)){
-  if(any(sapply(bcrrowlist, function(x) passerine.ses.mpd.1.continental[i, "community"] %in% x)) == TRUE){
-    passerine.ses.mpd.1.continental[i, "BCR"] <- which(sapply(bcrrowlist, function(x) passerine.ses.mpd.1.continental[i, "community"] %in% x))
+for(i in 1:nrow(passerine.ses.mpd.1)){
+  if(any(sapply(bcrrowlist, function(x) passerine.ses.mpd.1[i, "community"] %in% x)) == TRUE){
+    passerine.ses.mpd.1[i, "BCR"] <- which(sapply(bcrrowlist, function(x) passerine.ses.mpd.1[i, "community"] %in% x))
+    passerine.ses.mntd.1[i, "BCR"] <- which(sapply(bcrrowlist, function(x) passerine.ses.mntd.1[i, "community"] %in% x))
   }
   else {
     print("Pass")
