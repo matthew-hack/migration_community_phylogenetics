@@ -180,7 +180,7 @@ ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = 
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
-##### ASSIGN MIGRATORY PROPORTION VALUES TO EACH COMMUNITY IN CONTINENTAL POOL MODELS #####
+##### ASSIGN MIGRATORY PROPORTION VALUES TO EACH COMMUNITY #####
 
 #use week 1 as an example; week values and community files will be replaced when calculating for other weeks
 
@@ -230,23 +230,40 @@ migratory_proportion_df_week_1$proportion <- migratory_proportion_df_week_1$nmig
 #export file of migratory proportion values for each week 1 community
 write.csv(migratory_proportion_df_week_1, "output/community_data/migratory_proportion_week_1.csv")
 
-#load in migratory proportion dataframes 
+#reload in migratory proportion dataframes if already created
 migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
 migratory_proportion_df_week_1 <- data.frame(migratory_proportion_df_week_1[, c("community", "nmigrant", "nspecies", "proportion")],
                                              row.names = migratory_proportion_df_week_1$community) 
 
+##### PROCESS MIGRATORY PROPORTION IN BCR-DIVIDED DATAFRAMES #####
+
+#read in shapefiles of Bird Conservation Regions (BCRs)
+allbcrs <- read_sf("data/BCR_Terrestrial/BCR_Terrestrial_master.shp")
+#assign row names to BCRs
+wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
+for(i in 1:37){
+  assign(paste0("bcr",i), allbcrs[allbcrs$BCR == i,] %>%
+           st_transform(crs = crs) %>%
+           st_geometry())
+  assign(paste0("bcr", i, "spatial"), as_Spatial(get(paste0("bcr", i))))
+  assign(paste0("wewpew_1_bcr_", i), rast(mask(raster(wewpew_1_agg), get(paste0("bcr", i, "spatial")))))
+  assign(paste0("wewpew_1_bcr_", i, "_df"), as.data.frame(get(paste0("wewpew_1_bcr_", i))))
+  assign(paste0("bcr", i, "rows"), row.names(get(paste0("wewpew_1_bcr_", i, "_df"))))
+}
 
 #extract by BCR
+migratory_proportion_df_week_1 <- data.frame(migratory_proportion_df_week_1[, c("community", "nmigrant", "nspecies", "proportion")],
+                                             row.names = migratory_proportion_df_week_1$community) 
 
-#week 1
+#subset migratory proportion dataframe for week 1
 for(i in 1:37){
   assign(paste0("bcr", i, "_mig_prop_week_1"), subset(migratory_proportion_df_week_1, row.names(migratory_proportion_df_week_1) %in% 
                                                         get(paste0("bcr", i, "rows"))))
 }
 
-#export by BCR
+#export dataframes containing migratory proportion for each community, subsetted by BCR
 for(i in 1:37){
-  if(nrow(get(paste0("bcr", i, "_mig_prop_week_1"))) > 0){
+  if(nrow(get(paste0("bcr", i, "_mig_prop_week_1"))) > 0){ #passes BCRs not represented in week 1 communities
     write.csv(get(paste0("bcr", i, "_mig_prop_week_1")), paste0("output/bcr_community_data/1/bcr", i, "_mig_prop_week_1.csv"))
   }
   else {
@@ -254,97 +271,29 @@ for(i in 1:37){
   }
 }
 
-#week 2
-migratory_proportion_df_week_2 <- read.csv("output/community_data/migratory_proportion_week_2.csv")
-migratory_proportion_df_week_2 <- data.frame(migratory_proportion_df_week_2[, c("community", "nmigrant", "nspecies", "proportion")],
-                                             row.names = migratory_proportion_df_week_2$community) 
+##### VISUALIZE SPATIAL DISTRIBUTION OF MIGRATORY PROPORTION #####
 
-
-for(i in 1:37){
-  assign(paste0("bcr", i, "_mig_prop_week_2"), subset(migratory_proportion_df_week_2, row.names(migratory_proportion_df_week_2) %in% 
-                                                        get(paste0("bcr", i, "rows"))))
-}
-
-#export by BCR
-for(i in 1:37){
-  if(nrow(get(paste0("bcr", i, "_mig_prop_week_2"))) > 0){
-    write.csv(get(paste0("bcr", i, "_mig_prop_week_2")), paste0("output/bcr_community_data/2/bcr", i, "_mig_prop_week_2.csv"))
-  }
-  else {
-    message(paste0("Skipped BCR ", i)) #show skipped BCRs
-  }
-}
-
-
-#week 16
-migratory_proportion_df_week_16 <- read.csv("output/community_data/migratory_proportion_week_16.csv")
-migratory_proportion_df_week_16 <- data.frame(migratory_proportion_df_week_16[, c("community", "nmigrant", "nspecies", "proportion")],
-                                              row.names = migratory_proportion_df_week_16$community) 
-
-
-for(i in 1:37){
-  assign(paste0("bcr", i, "_mig_prop_week_16"), subset(migratory_proportion_df_week_16, row.names(migratory_proportion_df_week_16) %in% 
-                                                         get(paste0("bcr", i, "rows"))))
-}
-
-#export by BCR
-for(i in 1:37){
-  if(nrow(get(paste0("bcr", i, "_mig_prop_week_16"))) > 0){
-    write.csv(get(paste0("bcr", i, "_mig_prop_week_16")), paste0("output/bcr_community_data/16/bcr", i, "_mig_prop_week_16.csv"))
-  }
-  else {
-    message(paste0("Skipped BCR ", i)) #show skipped BCRs
-  }
-}
-
-
-#week 19
-migratory_proportion_df_week_19 <- read.csv("output/community_data/migratory_proportion_week_19.csv")
-migratory_proportion_df_week_19 <- data.frame(migratory_proportion_df_week_19[, c("community", "nmigrant", "nspecies", "proportion")],
-                                              row.names = migratory_proportion_df_week_19$community) 
-
-
-for(i in 1:37){
-  assign(paste0("bcr", i, "_mig_prop_week_19"), subset(migratory_proportion_df_week_19, row.names(migratory_proportion_df_week_19) %in% 
-                                                         get(paste0("bcr", i, "rows"))))
-}
-
-#export by BCR
-for(i in 1:37){
-  if(nrow(get(paste0("bcr", i, "_mig_prop_week_19"))) > 0){
-    write.csv(get(paste0("bcr", i, "_mig_prop_week_19")), paste0("output/bcr_community_data/19/bcr", i, "_mig_prop_week_19.csv"))
-  }
-  else {
-    message(paste0("Skipped BCR ", i)) #show skipped BCRs
-  }
-}
-
-
-
-
-### visualizations
-#week 1
-migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
-migratory_proportion_df_week_1 <- data.frame(migratory_proportion_df_week_1[, c("community", "nmigrant", "nspecies", "proportion")],
-                                             row.names = migratory_proportion_df_week_1$community) 
-#use agg spatraster of minimum length df
-wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
-
+#extract row names defining communities
 migratory_proportion_df_week_1.rows <- as.numeric(migratory_proportion_df_week_1$community)
 
+#add coordinates to migratory proportion data frame
 migratory_proportion_df_week_1$x <- rep(NA, nrow(migratory_proportion_df_week_1))
 migratory_proportion_df_week_1$y <- rep(NA, nrow(migratory_proportion_df_week_1))
 
+#populate coordinates
 for(i in 1:nrow(migratory_proportion_df_week_1)){
   migratory_proportion_df_week_1$x[i] <- xyFromCell(wewpew_1_agg, migratory_proportion_df_week_1.rows[i])[,1]
   migratory_proportion_df_week_1$y[i] <- xyFromCell(wewpew_1_agg, migratory_proportion_df_week_1.rows[i])[,2]
 }
 
-
-
+#generate gg figure to plot spatial distributions
+countries <- ne_countries(returnclass = "sf") %>% 
+  st_geometry() %>% 
+  st_transform(crs)
 country_map <- ggplot()+
   geom_sf(data = countries) +
   coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
+
 
 pdf(file = 'output/figures/community_migratory_proportion_week_1.pdf')
 country_map + 
@@ -381,10 +330,6 @@ for(i in 1:nrow(migratory_proportion_df_week_26)){
 }
 
 
-
-country_map <- ggplot()+
-  geom_sf(data = countries) +
-  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
 
 pdf(file = 'output/figures/community_migratory_proportion_week_26.pdf')
 country_map + 
@@ -466,14 +411,12 @@ ggplot(nspecies_hist, aes(x=value, group=type, fill=type)) +
   theme(legend.position = "bottom", text = element_text(size = 20))
 
 
-### add migratory proportion to the other data frames
+##### add migratory proportion to the other weeks #####
 
-for(i in 1:52){
+for(i in 1:52){ #loading in the files takes about a half hour
   assign(paste0("migratory_proportion_df_week", i), read.csv(paste0("output/community_data/migratory_proportion_week_", i, ".csv")))
-} #takes about a half hour
+} 
 
-tail(all_combined_week_NRIs_df)
-head(migratory_proportion_df_week_1)
 migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == all_combined_week_NRIs_df[1,"X"],"proportion"]
 migratory_proportion_df_week2[migratory_proportion_df_week2$community == all_combined_week_NRIs_df[1,"X"],"proportion"]
 
@@ -493,22 +436,18 @@ all_mig_props <- list(migratory_proportion_df_week1, migratory_proportion_df_wee
 
 all_combined_week_NRIs_df[1,"X"]
 all_combined_week_NRIs_df$proportion <- rep(NA, nrow(all_combined_week_NRIs_df))
-# for(i in 1:nrow(all_combined_week_NRIs_df)){ #changed value based on where it left off
-#   all_combined_week_NRIs_df[i,"proportion"] <- all_mig_props[[all_combined_week_NRIs_df[i,".id"]]][all_mig_props[[all_combined_week_NRIs_df[i,".id"]]]$community == all_combined_week_NRIs_df[i,"X"],"proportion"]
-# }
-#  warning: takes a long time (~3 days)
-# write.csv(all_combined_week_NRIs_df, "output/tables/combined_NRI_df.csv")
+for(i in 1:nrow(all_combined_week_NRIs_df)){ #changed value based on where it left off
+  all_combined_week_NRIs_df[i,"proportion"] <- all_mig_props[[all_combined_week_NRIs_df[i,".id"]]][all_mig_props[[all_combined_week_NRIs_df[i,".id"]]]$community == all_combined_week_NRIs_df[i,"X"],"proportion"]
+}
+# warning: takes a long time (~3 days)
+write.csv(all_combined_week_NRIs_df, "output/tables/combined_NRI_df.csv")
 all_combined_week_NRIs_df <- read.csv("output/tables/combined_NRI_df.csv")
 
 #replicate with NTI
 all_combined_week_NTIs_df$proportion <- rep(NA, nrow(all_combined_week_NTIs_df))
-# for(i in 3606:nrow(all_combined_week_NTIs_df)){ #changed value based on where it left off
-#   all_combined_week_NTIs_df[i,"proportion"] <- all_mig_props[[all_combined_week_NTIs_df[i,".id"]]][all_mig_props[[all_combined_week_NTIs_df[i,".id"]]]$community == all_combined_week_NTIs_df[i,"X"],"proportion"]
-# }
-# write.csv(all_combined_week_NTIs_df, "output/tables/combined_NTI_df.csv")
+for(i in 3606:nrow(all_combined_week_NTIs_df)){ #changed value based on where it left off
+  all_combined_week_NTIs_df[i,"proportion"] <- all_mig_props[[all_combined_week_NTIs_df[i,".id"]]][all_mig_props[[all_combined_week_NTIs_df[i,".id"]]]$community == all_combined_week_NTIs_df[i,"X"],"proportion"]
+}
+write.csv(all_combined_week_NTIs_df, "output/tables/combined_NTI_df.csv")
 all_combined_week_NTIs_df <- read.csv("output/tables/combined_NTI_df.csv")
 # warning: takes a long time (~3 days)
-
-
-
-
