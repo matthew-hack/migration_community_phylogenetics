@@ -512,7 +512,7 @@ country_map +
                         mid = "gray90",
                         midpoint = 0, limits = c(-4,5),
                         na.value = "gray97") +
-  ggtitle("Jun 28") + #date representing center of week 26
+  ggtitle("Jan 4") + 
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         axis.text.y=element_blank(),
@@ -586,7 +586,7 @@ country_map +
                         mid = "gray90",
                         midpoint = 0, limits = c(-5,5),
                         na.value = "gray97") +
-  ggtitle("Jun 28") +
+  ggtitle("Jan 4") +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         axis.text.y=element_blank(),
@@ -604,8 +604,8 @@ for(i in 1:length(week1bcrlist)){
 }
 
 #export combined NRI and NTI dataframes
-write.csv(combined_week_1_nri, "output/bcr_tables/1/combined_NRI_1_redo.csv")
-write.csv(combined_week_1_NTI, "output/bcr_tables/1/combined_NTI_1_redo.csv")
+write.csv(combined_week_1_nri, "output/bcr_tables/1/combined_NRI_1.csv")
+write.csv(combined_week_1_NTI, "output/bcr_tables/1/combined_NTI_1.csv")
 
 ##### replicate process with continental pool tables
 #re-import tables
@@ -654,115 +654,3 @@ passerine.ses.mpd.1.continental$proportion <- rep(NA, nrow(passerine.ses.mpd.1.c
 for(i in 1:nrow(passerine.ses.mpd.1.continental)){ 
   passerine.ses.mpd.1.continental[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == passerine.ses.mpd.1.continental[i,"community"],"proportion"]
 }
-
-
-
-
-
-
-
-# 
-# #plot community NRI
-# country_map <- ggplot()+
-#   geom_sf(data = countries) +
-#   coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-# 
-# 
-# pdf(file = 'output/figures/1/passerine.1.BCR.NRI.pdf')
-# country_map + 
-#   geom_point(data = combined_week_1_nri, alpha = 0.5, aes(x = x, y = y, color = NRI)) +
-#   scale_color_gradient2("NRI", low = "red", high = "blue4",
-#                         mid = "gray90",
-#                         midpoint = 0, limits = c(-4,5),
-#                         na.value = "gray97") +
-#   ggtitle("Jan 4") +
-#   theme(axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank(),
-#         axis.text.y=element_blank(),
-#         axis.ticks.y=element_blank(),
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         plot.title = element_text(hjust = 0.5)) +
-#   labs(x = "", y = "")
-# dev.off()
-# 
-# 
-# 
-# # repeat process with NTI
-# 
-# #create BCR-specific row columns
-# for(i in 1:37){
-#   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
-#     assign(paste0("passerine.ses.mntd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".csv"), row.names=1, header=TRUE))
-#     assign(paste0("passerine.ses.mntd.1.bcr", i, ".rows"), as.numeric(row.names(get(paste0("passerine.ses.mntd.1.bcr", i)))))
-#   }
-#   else {
-#     message(paste0("Skipped BCR ", i)) #show skipped BCRs
-#   }
-# }
-# 
-# #create a list of all the NTI dataframes
-# week1bcrlistNTI <- list(passerine.ses.mntd.1.bcr5, passerine.ses.mntd.1.bcr6,
-#                         passerine.ses.mntd.1.bcr7, passerine.ses.mntd.1.bcr8, passerine.ses.mntd.1.bcr9, passerine.ses.mntd.1.bcr10,
-#                         passerine.ses.mntd.1.bcr11, passerine.ses.mntd.1.bcr12, passerine.ses.mntd.1.bcr13, passerine.ses.mntd.1.bcr14,
-#                         passerine.ses.mntd.1.bcr15, passerine.ses.mntd.1.bcr16, passerine.ses.mntd.1.bcr17, passerine.ses.mntd.1.bcr18,
-#                         passerine.ses.mntd.1.bcr19, passerine.ses.mntd.1.bcr20, passerine.ses.mntd.1.bcr21, passerine.ses.mntd.1.bcr22,
-#                         passerine.ses.mntd.1.bcr23, passerine.ses.mntd.1.bcr24, passerine.ses.mntd.1.bcr25, passerine.ses.mntd.1.bcr26,
-#                         passerine.ses.mntd.1.bcr27, passerine.ses.mntd.1.bcr28, passerine.ses.mntd.1.bcr29, passerine.ses.mntd.1.bcr30,
-#                         passerine.ses.mntd.1.bcr31, passerine.ses.mntd.1.bcr32, passerine.ses.mntd.1.bcr33, passerine.ses.mntd.1.bcr34,
-#                         passerine.ses.mntd.1.bcr35, passerine.ses.mntd.1.bcr36, passerine.ses.mntd.1.bcr37)
-# 
-# #create list of all row name vectors
-# week1bcrlistrowsNTI <- list(passerine.ses.mntd.1.bcr5.rows, passerine.ses.mntd.1.bcr6.rows,
-#                             passerine.ses.mntd.1.bcr7.rows, passerine.ses.mntd.1.bcr8.rows, passerine.ses.mntd.1.bcr9.rows, passerine.ses.mntd.1.bcr10.rows,
-#                             passerine.ses.mntd.1.bcr11.rows, passerine.ses.mntd.1.bcr12.rows, passerine.ses.mntd.1.bcr13.rows, passerine.ses.mntd.1.bcr14.rows,
-#                             passerine.ses.mntd.1.bcr15.rows, passerine.ses.mntd.1.bcr16.rows, passerine.ses.mntd.1.bcr17.rows, passerine.ses.mntd.1.bcr18.rows,
-#                             passerine.ses.mntd.1.bcr19.rows, passerine.ses.mntd.1.bcr20.rows, passerine.ses.mntd.1.bcr21.rows, passerine.ses.mntd.1.bcr22.rows,
-#                             passerine.ses.mntd.1.bcr23.rows, passerine.ses.mntd.1.bcr24.rows, passerine.ses.mntd.1.bcr25.rows, passerine.ses.mntd.1.bcr26.rows,
-#                             passerine.ses.mntd.1.bcr27.rows, passerine.ses.mntd.1.bcr28.rows, passerine.ses.mntd.1.bcr29.rows, passerine.ses.mntd.1.bcr30.rows,
-#                             passerine.ses.mntd.1.bcr31.rows, passerine.ses.mntd.1.bcr32.rows, passerine.ses.mntd.1.bcr33.rows, passerine.ses.mntd.1.bcr34.rows,
-#                             passerine.ses.mntd.1.bcr35.rows, passerine.ses.mntd.1.bcr36.rows, passerine.ses.mntd.1.bcr37.rows)
-# 
-# 
-# #add columns for x coords, y coords, NTI data
-# for(i in 1:length(week1bcrlistNTI)){
-#   week1bcrlistNTI[[i]]$x <- rep(NA, nrow(week1bcrlistNTI[[i]]))
-#   week1bcrlistNTI[[i]]$y <- rep(NA, nrow(week1bcrlistNTI[[i]]))
-#   week1bcrlistNTI[[i]]$NTI <- rep(NA, nrow(week1bcrlistNTI[[i]]))
-# }
-# 
-# 
-# 
-# #add coords and NTI to each subsampled community
-# for(i in 1:length(week1bcrlistNTI)){
-#   for(j in 1:nrow(week1bcrlistNTI[[i]])){
-#     week1bcrlistNTI[[i]]$x[j] <- xyFromCell(wewpew_1_agg, week1bcrlistrowsNTI[[i]][j])[,1]
-#     week1bcrlistNTI[[i]]$y[j] <- xyFromCell(wewpew_1_agg, week1bcrlistrowsNTI[[i]][j])[,2]
-#   }
-#   week1bcrlistNTI[[i]]$NTI <- -1*week1bcrlistNTI[[i]]$mntd.obs.z
-# }
-# 
-# #combine into one dataframe
-# combined_week_1_NTI <- bind_rows(week1bcrlistNTI, .id = "ntaxa")
-# 
-# #plot community NTI
-# country_map <- ggplot()+
-#   geom_sf(data = countries) +
-#   coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-# 
-# 
-# pdf(file = 'output/figures/1/passerine.1.BCR.NTI.pdf')
-# country_map + 
-#   geom_point(data = combined_week_1_NTI, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
-#   scale_color_gradient2("NTI", low = "red", high = "blue4",
-#                         mid = "gray90",
-#                         midpoint = 0, limits = c(-5,5),
-#                         na.value = "gray97") +
-#   ggtitle("Jan 4") +
-#   theme(axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank(),
-#         axis.text.y=element_blank(),
-#         axis.ticks.y=element_blank(),
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         plot.title = element_text(hjust = 0.5)) +
-#   labs(x = "", y = "")
-# dev.off()
