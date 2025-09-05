@@ -289,28 +289,23 @@ country_map +
   labs(x = "", y = "")
 dev.off()
 
-#NTI
+#construct new dataframe to visualize NTI data
 passerine.ses.mntd.1.rows <- as.numeric(row.names(passerine.ses.mntd.1))
-
 passerine.ses.mntd.1$x <- rep(NA, nrow(passerine.ses.mntd.1))
 passerine.ses.mntd.1$y <- rep(NA, nrow(passerine.ses.mntd.1))
 passerine.ses.mntd.1$NTI <- rep(NA, nrow(passerine.ses.mntd.1))
 
-
-#add coords to each subsampled community
+#add coordinates to each subsampled community
 for(i in 1:nrow(passerine.ses.mntd.1)){
   passerine.ses.mntd.1$x[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mntd.1.rows[i])[,1]
   passerine.ses.mntd.1$y[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mntd.1.rows[i])[,2]
 }
 
+#calculate NTI from MNTD values
 passerine.ses.mntd.1$NTI <- -1*passerine.ses.mntd.1$mntd.obs.z
 
 
-#plot community NTI
-country_map <- ggplot()+
-  geom_sf(data = countries) +
-  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-
+#plot community NTI (output goes into NTI Spatiotemporal Variation (Continental Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.NTI.pdf')
 country_map +
   geom_point(data = passerine.ses.mntd.1, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
@@ -328,8 +323,7 @@ country_map +
   labs(x = "", y = "")
 dev.off()
 
-
-### Attempt BCR-level communities
+##### RUN COMMUNITY PHYLOGENETIC METRICS ON ECOREGIONAL SPECIES POOL #####
 
 # # #load in minimum length species vector
 wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
