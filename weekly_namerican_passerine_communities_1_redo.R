@@ -621,7 +621,7 @@ bcrrowlist <- list(bcr1rows, bcr2rows, bcr3rows, bcr4rows, bcr5rows, bcr6rows, b
                    bcr25rows, bcr26rows, bcr27rows, bcr28rows, bcr29rows, bcr30rows, bcr31rows, bcr32rows,
                    bcr33rows, bcr34rows, bcr35rows, bcr36rows, bcr37rows)
 
-#match BCRs to continental community
+#match BCRs to continental communities
 for(i in 1:nrow(passerine.ses.mpd.1)){
   if(any(sapply(bcrrowlist, function(x) passerine.ses.mpd.1[i, "community"] %in% x)) == TRUE){
     passerine.ses.mpd.1[i, "BCR"] <- which(sapply(bcrrowlist, function(x) passerine.ses.mpd.1[i, "community"] %in% x))
@@ -632,9 +632,7 @@ for(i in 1:nrow(passerine.ses.mpd.1)){
   }
 }
 
-migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
+#export updated NRI and NTI continental pool data
+write.csv(passerine.ses.mpd.1, "output/tables/1/combined_NRI_1_continental.csv")
+write.csv(passerine.ses.mntd.1, "output/tables/1/combined_NTI_1_continental.csv")
 
-passerine.ses.mpd.1.continental$proportion <- rep(NA, nrow(passerine.ses.mpd.1.continental))
-for(i in 1:nrow(passerine.ses.mpd.1.continental)){ 
-  passerine.ses.mpd.1.continental[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == passerine.ses.mpd.1.continental[i,"community"],"proportion"]
-}
