@@ -225,20 +225,20 @@ passerine.cophenDist <- cophenetic.phylo(passerine.picCleanTree)
 
 #generate MPD (mean phylogenetic distance) values for each community at continental species pool
 passerine.ses.mpd.1 <- ses.mpd(passerine.1.picCleanComm.subsample,
-                                passerine.cophenDist,
-                                null.model = "taxa.labels",
-                                abundance.weighted = FALSE,
-                                runs = 100)
+                               passerine.cophenDist,
+                               null.model = "taxa.labels",
+                               abundance.weighted = FALSE,
+                               runs = 100)
 #export and reread data frame containing MPD values
 write.csv(passerine.ses.mpd.1, "output/tables/1/passerine.ses.mpd.1.csv")
 passerine.ses.mpd.1 <- read.csv("output/tables/1/passerine.ses.mpd.1.csv", row.names=1, header=TRUE)
 
 #generate MNTD (mean nearest taxa distance) values for each community at continental species pool
 passerine.ses.mntd.1 <- ses.mntd(passerine.1.picCleanComm.subsample,
-                                  passerine.cophenDist,
-                                  null.model = "taxa.labels",
-                                  abundance.weighted = FALSE,
-                                  runs = 100)
+                                 passerine.cophenDist,
+                                 null.model = "taxa.labels",
+                                 abundance.weighted = FALSE,
+                                 runs = 100)
 #export and reread data frame containing MNTD values
 write.csv(passerine.ses.mntd.1, "output/tables/1/passerine.ses.mntd.1.csv")
 passerine.ses.mntd.1 <- read.csv("output/tables/1/passerine.ses.mntd.1.csv", row.names=1, header=TRUE)
@@ -325,10 +325,8 @@ dev.off()
 
 ##### RUN COMMUNITY PHYLOGENETIC METRICS ON ECOREGIONAL SPECIES POOL #####
 
-# # #load in minimum length species vector
-wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
-# #read in all BCR data
-allbcrs <- read_sf("data/BCR_Terrestrial/BCR_Terrestrial_master.shp") #read in BCR files
+#read in shapefiles of Bird Conservation Regions (BCRs)
+allbcrs <- read_sf("data/BCR_Terrestrial/BCR_Terrestrial_master.shp")
 #assign row names to BCRs
 for(i in 1:37){
   assign(paste0("bcr",i), allbcrs[allbcrs$BCR == i,] %>%
@@ -340,18 +338,19 @@ for(i in 1:37){
   assign(paste0("bcr", i, "rows"), row.names(get(paste0("wewpew_1_bcr_", i, "_df"))))
 }
 
-#create weekly community data subsetted by BCR
+#create weekly community data files subsetted by BCRs
 for(i in 1:37){
   assign(paste0("community_1_bcr_", i), subset(community1, row.names(community1) %in% get(paste0("bcr", i, "rows"))))
   assign(paste0("community_1_bcr_", i, "_fil"),
          get(paste0("community_1_bcr_", i)) %>% dplyr::select(which(colSums(get(paste0("community_1_bcr_", i))) > 0)))
 }
-#export the data
+
+#export community data subdivided by BCRs
 for(i in 1:37){
   data.table::fwrite(get(paste0("community_1_bcr_", i, "_fil")), file = paste0("output/bcr_community_data/1/community_1_bcr_", i, ".csv"))
 }
 
-# Using picante -- clean trees/comm
+#generate cleaned phylogenetic trees and community matrices for each BCR
 for(i in 1:37){
   assign(paste0("passerine.picCleanTree.", i), match.phylo.comm(phy = passerine.tree,
                                                                 comm = get(paste0("community_1_bcr_", i, "_fil")))$phy)
@@ -359,16 +358,15 @@ for(i in 1:37){
                                                                 comm = get(paste0("community_1_bcr_", i, "_fil")))$comm)
 }
 
-# create phylogenetic distance matrices
+#create phylogenetic distance matrices for each BCR
 for(i in 1:37){
   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
     assign(paste0("passerine.cophenDist.", i), cophenetic.phylo(get(paste0("passerine.picCleanTree.", i))))
   }
   else {
-    message(paste0("Skipped BCR ", i)) #show skipped BCRs
+    message(paste0("Skipped BCR ", i)) #show skipped BCRs if the BCR file does not exist for the given week (due to modeling constraints from Status & Trends files)
   }
 }
-
 
 #subsample dataframes
 for(i in 1:37){
@@ -493,9 +491,6 @@ for(i in 1:length(week1bcrlist)){
   week1bcrlist[[i]]$BCR <- rep(NA, nrow(week1bcrlist[[i]]))
 }
 
-#
-# #use agg spatraster of minimum length df
-wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
 
 #add coords and NRI to each subsampled community
 # #valid BCRs in week 1
@@ -585,9 +580,6 @@ for(i in 1:length(week1bcrlistNTI)){
 }
 
 
-# #use agg spatraster of minimum length df
-wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
-
 #add coords and NTI to each subsampled community
 for(i in 1:length(week1bcrlistNTI)){
   for(j in 1:nrow(week1bcrlistNTI[[i]])){
@@ -651,8 +643,6 @@ passerine.ses.mpd.1.continental$y <- rep(NA, nrow(passerine.ses.mpd.1.continenta
 passerine.ses.mpd.1.continental$NRI <- rep(NA, nrow(passerine.ses.mpd.1.continental))
 passerine.ses.mpd.1.continental$BCR <- rep(NA, nrow(passerine.ses.mpd.1.continental))
 
-# #use agg spatraster of minimum length df
-wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
 
 #populate x and y
 for(i in 1:nrow(passerine.ses.mpd.1.continental)){
@@ -763,8 +753,6 @@ for(i in 1:nrow(passerine.ses.mpd.1.continental)){
 # }
 # 
 # 
-# # #use agg spatraster of minimum length df
-# wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
 # 
 # #add coords and NTI to each subsampled community
 # for(i in 1:length(week1bcrlistNTI)){
