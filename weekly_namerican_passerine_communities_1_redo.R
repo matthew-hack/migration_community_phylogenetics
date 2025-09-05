@@ -217,7 +217,7 @@ write.csv(as.data.frame(subsampled_communities), "output/tables/1/subsampled_com
 intsample_df <- read.csv("output/tables/1/subsampled_communities.csv", row.names=1)
 intsample <- unlist(as.vector(intsample_df))
 
-#randomization -- SES PD null model
+#perform subsample on community matrix
 passerine.1.picCleanComm.subsample <- passerine.picCleanComm[rownames(passerine.picCleanComm) %in% as.character(intsample), ] 
 
 #create a phylogenetic distance matrix
@@ -384,7 +384,7 @@ for(i in 1:37){
 
 #run NRI on each BCR region subsample
 for(i in 1:37){
-  if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
+  if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){ #ensures there is data for this week in this BCR
     assign(paste0("passerine.ses.mpd.1.bcr", i), ses.mpd(get(paste0("passerine.1.picCleanComm.", i, ".subsample")),
                                                          get(paste0("passerine.cophenDist.", i)),
                                                          null.model = "taxa.labels",
@@ -396,11 +396,10 @@ for(i in 1:37){
   }
 }
 
-#
-# #export tables for each BCR's NRI results
+#export tables for each BCR's NRI results
 for(i in 1:37){
   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
-    write.csv(get(paste0("passerine.ses.mpd.1.bcr", i)), paste0("output/bcr_tables/1/passerine.ses.mpd.1.bcr.", i, ".redo.csv"))
+    write.csv(get(paste0("passerine.ses.mpd.1.bcr", i)), paste0("output/bcr_tables/1/passerine.ses.mpd.1.bcr.", i, ".csv"))
   }
   else {
     message(paste0("Skipped BCR ", i)) #show skipped BCRs
@@ -411,7 +410,7 @@ for(i in 1:37){
 ### replicate process with NTI
 
 for(i in 1:37){
-  if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
+  if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){ #ensures there is data for this week in this BCR
     assign(paste0("passerine.ses.mntd.1.bcr", i), ses.mntd(get(paste0("passerine.1.picCleanComm.", i, ".subsample")),
                                                            get(paste0("passerine.cophenDist.", i)),
                                                            null.model = "taxa.labels",
@@ -427,32 +426,33 @@ for(i in 1:37){
 #export tables for each BCR's NTI results
 for(i in 1:37){
   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
-    write.csv(get(paste0("passerine.ses.mntd.1.bcr", i)), paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".redo.csv"))
+    write.csv(get(paste0("passerine.ses.mntd.1.bcr", i)), paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".csv"))
   }
   else {
     message(paste0("Skipped BCR ", i)) #show skipped BCRs
   }
 }
 
-
-#
-#re-import tables
+#re-import tables if they have already been run previously
 for(i in 1:37){
   if(file.exists(paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".csv"))){
-    assign(paste0("passerine.ses.mntd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".redo.csv")))
-    assign(paste0("passerine.ses.mpd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mpd.1.bcr.", i, ".redo.csv")))
+    assign(paste0("passerine.ses.mntd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mntd.1.bcr.", i, ".csv")))
+    assign(paste0("passerine.ses.mpd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mpd.1.bcr.", i, ".csv")))
   }
   else {
     message(paste0("Skipped BCR ", i)) #show skipped BCRs
   }
 }
+
+
+
 
 #create joint visualizations
 
 #create BCR-specific row columns
 for(i in 1:37){
   if(nrow(get(paste0("wewpew_1_bcr_", i, "_df"))) > 0){
-    assign(paste0("passerine.ses.mpd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mpd.1.bcr.", i, ".redo.csv"), row.names=1, header=TRUE))
+    assign(paste0("passerine.ses.mpd.1.bcr", i), read.csv(paste0("output/bcr_tables/1/passerine.ses.mpd.1.bcr.", i, ".csv"), row.names=1, header=TRUE))
     assign(paste0("passerine.ses.mpd.1.bcr", i, ".rows"), as.numeric(row.names(get(paste0("passerine.ses.mpd.1.bcr", i)))))
   }
   else {
