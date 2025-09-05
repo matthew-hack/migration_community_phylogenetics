@@ -182,6 +182,8 @@ us <- ne_countries(country = "united states of america", type = "countries", ret
 
 ##### ASSIGN MIGRATORY PROPORTION VALUES TO EACH COMMUNITY IN CONTINENTAL POOL MODELS #####
 
+#use week 1 as an example; week values and community files will be replaced when calculating for other weeks
+
 #load first taxonomic species at minimum community size (established in raster_download.R)
 wewpew_1_agg_df <- read.csv("output/species_data/1/wewpew_1_agg.csv", row.names = 1)
 #read existing community table (generated in raster_download.R)
@@ -200,15 +202,13 @@ migratory_proportion_df_week_1 <- data.frame(community = rep(NA, nrow(community1
                                              nspecies = rep(NA, nrow(community1)), #number of total species
                                              proportion = rep(NA, nrow(community1))) #proportion of species that are migratory
 
-#fill community numbers
+#populate community individual identifiers
 migratory_proportion_df_week_1[,"community"] <- rownames(community1)
 
-#fill diversity
+#populate species richness into nspecies column
 migratory_proportion_df_week_1[,"nspecies"] <- apply(community1, 1, function(i) sum(i > 0))
 
-
 #calculate number of migrants in each community
-
 #create function for number of migrants in a community
 number_of_migrants <- function(i){
   row_comm_present_species <- i
@@ -219,24 +219,16 @@ number_of_migrants <- function(i){
   return(length(test_migratory_status[test_migratory_status == "migratory"]))
 }
 
-#fill into dataset (will take a long time)
+#fill into dataset (warning: can take multiple hours)
 for(i in 1:nrow(migratory_proportion_df_week_1)){
   migratory_proportion_df_week_1[i,"nmigrant"] <- number_of_migrants(community1[i,] %>% select_if(~any(. > 0)))
 }
 
+#calculate migratory proportion
 migratory_proportion_df_week_1$proportion <- migratory_proportion_df_week_1$nmigrant/migratory_proportion_df_week_1$nspecies
 
+#export file of migratory proportion values for each week 1 community
 write.csv(migratory_proportion_df_week_1, "output/community_data/migratory_proportion_week_1.csv")
-
-#testrowcomm1 <- community1[1,] %>% select_if(~any(. > 0))
-
-#colnames(community1[1,] %>% select_if(~any(. > 0))) #returns each indexed present species
-
-#migratory_status[migratory_status$jetz_tree_latin_name == colnames(community1[1,] %>% select_if(~any(. > 0)))[1],"migratory_status"] #returns migratory status of each species
-
-
-#list migratory species
-#community1[1,][rowSums(community1[1,] > 0) == ncol(df), ]
 
 #load in migratory proportion dataframes 
 migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
