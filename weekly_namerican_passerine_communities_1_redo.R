@@ -243,114 +243,94 @@ passerine.ses.mntd.1 <- ses.mntd(passerine.1.picCleanComm.subsample,
 write.csv(passerine.ses.mntd.1, "output/tables/1/passerine.ses.mntd.1.csv")
 passerine.ses.mntd.1 <- read.csv("output/tables/1/passerine.ses.mntd.1.csv", row.names=1, header=TRUE)
 
-#Visualizations
+##### GENERATE VISUALIZATIONS FOR SPATIAL DISTRIBUTION OF NRI AND NTI METRICS (CONTINENTAL POOL) #####
 
-#circle back to see if these visualizations are necessary
+#load in aggregated data frame for first taxonomic species at minimum community size
+wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
 
-# # 
-# # 
-# # #NRI
-# passerine.ses.mpd.1 <- read.csv("output/tables/1/passerine.ses.mpd.1.csv", row.names=1, header=TRUE)
-# passerine.ses.mpd.1.rows <- as.numeric(row.names(passerine.ses.mpd.1))
-# 
-# passerine.ses.mpd.1$x <- rep(NA, nrow(passerine.ses.mpd.1))
-# passerine.ses.mpd.1$y <- rep(NA, nrow(passerine.ses.mpd.1))
-# passerine.ses.mpd.1$NRI <- rep(NA, nrow(passerine.ses.mpd.1))
-# 
-# 
-# #add coords to each subsampled community
-# for(i in 1:nrow(passerine.ses.mpd.1)){
-#   passerine.ses.mpd.1$x[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mpd.1.rows[i])[,1]
-#   passerine.ses.mpd.1$y[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mpd.1.rows[i])[,2]
-# }
-# 
-# passerine.ses.mpd.1$NRI <- -1*passerine.ses.mpd.1$mpd.obs.z
-# 
-# library(ggmap)
-# 
-# #plot community NRI
-# country_map <- ggplot()+
-#   geom_sf(data = countries) +
-#   coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-# 
-# pdf(file = 'output/figures/1/passerine.1.NRI.pdf')
-# country_map + 
-#   geom_point(data = passerine.ses.mpd.1, alpha = 0.5, aes(x = x, y = y, color = NRI)) +
-#   scale_color_gradient2("NRI", low = "red", high = "blue4",
-#                         mid = "gray90",
-#                         midpoint = 0, limits = c(-4,7),
-#                         na.value = "gray97") +
-#   ggtitle("Jan 4") +
-#   theme(axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank(),
-#         axis.text.y=element_blank(),
-#         axis.ticks.y=element_blank(),
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         plot.title = element_text(hjust = 0.5)) +
-#   labs(x = "", y = "")
-# dev.off()
-# 
-# country_map + 
-#   geom_point(data = passerine.ses.mpd.1, alpha = 0.5, aes(x = x, y = y, color = ntaxa)) +
-#   scale_color_gradient2("Richness", low = "red", high = "blue4",
-#                         mid = "gray90",
-#                         midpoint = median(passerine.ses.mpd.1$ntaxa)) +
-#   ggtitle("Jan 4") +
-#   theme(axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank(),
-#         axis.text.y=element_blank(),
-#         axis.ticks.y=element_blank(),
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         plot.title = element_text(hjust = 0.5)) +
-#   labs(x = "", y = "")
-# 
-# head(passerine.ses.mpd.1)
-# 
-# 
-# #NTI
-# passerine.ses.mntd.1 <- read.csv("output/tables/1/passerine.ses.mntd.1.csv", row.names=1, header=TRUE)
-# passerine.ses.mntd.1.rows <- as.numeric(row.names(passerine.ses.mntd.1))
-# 
-# passerine.ses.mntd.1$x <- rep(NA, nrow(passerine.ses.mntd.1))
-# passerine.ses.mntd.1$y <- rep(NA, nrow(passerine.ses.mntd.1))
-# passerine.ses.mntd.1$NTI <- rep(NA, nrow(passerine.ses.mntd.1))
-# 
-# 
-# #add coords to each subsampled community
-# for(i in 1:nrow(passerine.ses.mntd.1)){
-#   passerine.ses.mntd.1$x[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mntd.1.rows[i])[,1]
-#   passerine.ses.mntd.1$y[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mntd.1.rows[i])[,2]
-# }
-# 
-# passerine.ses.mntd.1$NTI <- -1*passerine.ses.mntd.1$mntd.obs.z
-# 
-# 
-# #plot community NTI
-# country_map <- ggplot()+
-#   geom_sf(data = countries) +
-#   coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-# 
-# pdf(file = 'output/figures/1/passerine.1.NTI.pdf')
-# country_map + 
-#   geom_point(data = passerine.ses.mntd.1, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
-#   scale_color_gradient2("NTI", low = "red", high = "blue4",
-#                         mid = "gray90",
-#                         midpoint = 0, limits = c(-4,7),
-#                         na.value = "gray97") +
-#   ggtitle("Jan 4") +
-#   theme(axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank(),
-#         axis.text.y=element_blank(),
-#         axis.ticks.y=element_blank(),
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         plot.title = element_text(hjust = 0.5)) +
-#   labs(x = "", y = "")
-# dev.off()
-# 
-# 
+#construct new dataframe to visualize NRI data
+passerine.ses.mpd.1.rows <- as.numeric(row.names(passerine.ses.mpd.1))
+passerine.ses.mpd.1$x <- rep(NA, nrow(passerine.ses.mpd.1))
+passerine.ses.mpd.1$y <- rep(NA, nrow(passerine.ses.mpd.1))
+passerine.ses.mpd.1$NRI <- rep(NA, nrow(passerine.ses.mpd.1))
+
+#add coordinates to each subsampled community
+for(i in 1:nrow(passerine.ses.mpd.1)){
+  passerine.ses.mpd.1$x[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mpd.1.rows[i])[,1]
+  passerine.ses.mpd.1$y[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mpd.1.rows[i])[,2]
+}
+
+#calculate NRI from MPD values
+passerine.ses.mpd.1$NRI <- -1*passerine.ses.mpd.1$mpd.obs.z
+
+#generate gg figure to plot spatial distributions
+countries <- ne_countries(returnclass = "sf") %>% 
+  st_geometry() %>% 
+  st_transform(crs)
+country_map <- ggplot()+
+  geom_sf(data = countries) +
+  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
+
+#plot community NRI (output goes into NRI Spatiotemporal Variation (Continental Pool).gif)
+pdf(file = 'output/figures/1/passerine.1.NRI.pdf')
+country_map +
+  geom_point(data = passerine.ses.mpd.1, alpha = 0.5, aes(x = x, y = y, color = NRI)) +
+  scale_color_gradient2("NRI", low = "red", high = "blue4",
+                        mid = "gray90",
+                        midpoint = 0, limits = c(-4,7),
+                        na.value = "gray97") +
+  ggtitle("Jan 4") + #date representing center of week 1
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "", y = "")
+dev.off()
+
+#NTI
+passerine.ses.mntd.1.rows <- as.numeric(row.names(passerine.ses.mntd.1))
+
+passerine.ses.mntd.1$x <- rep(NA, nrow(passerine.ses.mntd.1))
+passerine.ses.mntd.1$y <- rep(NA, nrow(passerine.ses.mntd.1))
+passerine.ses.mntd.1$NTI <- rep(NA, nrow(passerine.ses.mntd.1))
+
+
+#add coords to each subsampled community
+for(i in 1:nrow(passerine.ses.mntd.1)){
+  passerine.ses.mntd.1$x[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mntd.1.rows[i])[,1]
+  passerine.ses.mntd.1$y[i] <- xyFromCell(wewpew_1_agg, passerine.ses.mntd.1.rows[i])[,2]
+}
+
+passerine.ses.mntd.1$NTI <- -1*passerine.ses.mntd.1$mntd.obs.z
+
+
+#plot community NTI
+country_map <- ggplot()+
+  geom_sf(data = countries) +
+  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
+
+pdf(file = 'output/figures/1/passerine.1.NTI.pdf')
+country_map +
+  geom_point(data = passerine.ses.mntd.1, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
+  scale_color_gradient2("NTI", low = "red", high = "blue4",
+                        mid = "gray90",
+                        midpoint = 0, limits = c(-4,7),
+                        na.value = "gray97") +
+  ggtitle("Jan 4") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "", y = "")
+dev.off()
+
+
 ### Attempt BCR-level communities
 
-# 
 # # #load in minimum length species vector
 wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
 # #read in all BCR data
@@ -365,11 +345,6 @@ for(i in 1:37){
   assign(paste0("wewpew_1_bcr_", i, "_df"), as.data.frame(get(paste0("wewpew_1_bcr_", i))))
   assign(paste0("bcr", i, "rows"), row.names(get(paste0("wewpew_1_bcr_", i, "_df"))))
 }
-
-# #read in community data
-community1 <- data.table::fread("output/community_data/community_1.csv")
-#deals with the issue of loading in multiple V1 copies but also preserves row names
-community1 <- data.frame(community1[,!"V1"], row.names = community1$V1)
 
 #create weekly community data subsetted by BCR
 for(i in 1:37){
@@ -831,39 +806,3 @@ for(i in 1:nrow(passerine.ses.mpd.1.continental)){
 #         plot.title = element_text(hjust = 0.5)) +
 #   labs(x = "", y = "")
 # dev.off()
-
-# 
-# #NTI visualization
-# 
-# passerine.ses.mntd.1.bcr12.rows <- as.numeric(row.names(passerine.ses.mntd.1.bcr12))
-# 
-# passerine.ses.mntd.1.bcr12$x <- rep(NA, nrow(passerine.ses.mntd.1.bcr12))
-# passerine.ses.mntd.1.bcr12$y <- rep(NA, nrow(passerine.ses.mntd.1.bcr12))
-# passerine.ses.mntd.1.bcr12$NTI <- rep(NA, nrow(passerine.ses.mntd.1.bcr12))
-# 
-# 
-# #add coords to each subsampled community
-# for(i in 1:nrow(passerine.ses.mntd.1.bcr12)){
-#   passerine.ses.mntd.1.bcr12$x[i] <- xyFromCell(wewpew_1_bcr_12, passerine.ses.mntd.1.bcr12.rows[i])[,1]
-#   passerine.ses.mntd.1.bcr12$y[i] <- xyFromCell(wewpew_1_bcr_12, passerine.ses.mntd.1.bcr12.rows[i])[,2]
-# }
-# 
-# passerine.ses.mntd.1.bcr12$NTI <- -1*passerine.ses.mntd.1.bcr12$mntd.obs.z
-# 
-# 
-# #plot community NTI
-# ggplot(data = passerine.ses.mntd.1.bcr12, mapping = aes(x = x, y = y)) +
-#   geom_point(alpha = 0.5, aes(color = NTI)) +
-#   scale_color_gradient2("NTI", low = "red", high = "blue4",
-#                         mid = "gray90",
-#                         midpoint = 0, limits = c(min(passerine.ses.mntd.1.bcr12$NTI), max(passerine.ses.mntd.1.bcr12$NTI)),
-#                         na.value = "gray97") +
-#   ggtitle("Jan 4") +
-#   theme(axis.text.x=element_blank(),
-#         axis.ticks.x=element_blank(),
-#         axis.text.y=element_blank(),
-#         axis.ticks.y=element_blank(),
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-#         plot.title = element_text(hjust = 0.5)) +
-#   labs(x = "", y = "")
-
