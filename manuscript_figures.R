@@ -12,118 +12,26 @@ lapply(required.libraries, require, character.only = TRUE)
 
 project <- terra::project 
 
-# Pure intro stuff
-
-# download a simplified example dataset for Yellow-bellied Sapsucker in Michigan
-path <- ebirdst_download(species = "example_data")
-
-# for non-example data use the species code or name instead of "example_data"
+# load the mapping parameters to generate necessary CRS
 path <- get_species_path("example_data")
-
-occ_lr <- load_raster(path, product = "occurrence", resolution = "lr")
-occ_lr
-
-parse_raster_dates(occ_lr)
-
-# weekly, low res, abundance confidence intervals
-abd_lower <- load_raster(path, product = "abundance", metric = "lower", 
-                         resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", metric = "upper", 
-                         resolution = "lr")
-
-
-# seasonal, low res, mean relative abundance
-abd_seasonal_mean <- load_raster(path, product = "abundance", 
-                                 period = "seasonal", metric = "mean", 
-                                 resolution = "lr")
-
-# season that each layer corresponds to
-names(abd_seasonal_mean)
-
-# just the breeding season layer
-abd_seasonal_mean[["breeding"]]
-
-# seasonal, low res, max occurrence
-occ_seasonal_max <- load_raster(path, product = "occurrence", 
-                                period = "seasonal", metric = "max", 
-                                resolution = "lr")
-
-# full year, low res, maximum relative abundance
-abd_fy_max <- load_raster(path, product = "abundance", 
-                          period = "full-year", metric = "max", 
-                          resolution = "lr")
-
-
-# Working with rasters module
-
-# load seasonal mean relative abundance at low res
-abd_seasonal <- load_raster(path, 
-                            product = "abundance", 
-                            period = "seasonal",
-                            metric = "mean",
-                            resolution = "lr")
-
-abd_breeding <- abd_seasonal[["breeding"]]
-
-# boundary polygon for michigan
-mi <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  filter(postal == "MI") %>% 
-  # project to same coordinate reference system as the raster data
-  st_transform(st_crs(abd_seasonal))
-
-# crop data to michigan
-abd_breeding_mi <- crop(abd_breeding, mi)
-
-# load the mapping parameters
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
 
-# transform to the custom projection using nearest neighbor resampling
-abd_projected <- project(abd_breeding_mi, crs, method = "near")
-
-# quantiles of non-zero values
-v <- values(abd_projected)
-v <- v[!is.na(v) & v > 0]
-bins <- quantile(v, seq(0, 1, by = 0.1))
-# add a bin for 0
-bins <- c(0, bins)
-
-# status and trends palette
-pal <- abundance_palette(length(bins) - 2)
-# add a color for zero
-pal <- c("#e6e6e6", pal)
-
-# natural earth boundaries
+#generate gg figure to plot spatial distributions
 countries <- ne_countries(returnclass = "sf") %>% 
   st_geometry() %>% 
   st_transform(crs)
-states <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
+country_map <- ggplot()+
+  geom_sf(data = countries) +
+  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
 
-
-# define the map extent with the michigan polygon
-mi_ext <- mi %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-labels <- quantile(bins, c(0, 0.5, 1))
-label_breaks <- seq(0, 1, length.out = length(bins))
-
-abd_median <- load_raster(path, product = "abundance", 
-                          metric = "median", resolution = "lr")
-abd_lower <- load_raster(path, product = "abundance",
-                         metric = "lower", resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", 
-                         metric = "upper", resolution = "lr")
-
+#load example raster
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
                                          period = "seasonal", metric = "mean", 
                                          resolution = "hr")
-
+#use example raster to crop to US boundaries
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
-
 
 ### visualizations
 #week 1
@@ -188,9 +96,6 @@ for(i in 1:nrow(migratory_proportion_df_week_26)){
 
 
 
-country_map <- ggplot()+
-  geom_sf(data = countries) +
-  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
 
 #pdf(file = 'output/figures/community_migratory_proportion_week_26.pdf')
 country_map + 
