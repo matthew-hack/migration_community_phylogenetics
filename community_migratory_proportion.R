@@ -319,6 +319,7 @@ for(i in 1:52){
   assign(paste0("week_", i, "_NTI"), read.csv(paste0("output/tables/", i, "/passerine.ses.mntd.", i, ".csv"), row.names=1))
 }
 
+## process NRI data
 #create a list of all NRI dataframes 
 NRIlist <- list(week_1_NRI, week_2_NRI, week_3_NRI, week_4_NRI, week_5_NRI, week_6_NRI, week_7_NRI, week_8_NRI,
                 week_9_NRI, week_10_NRI, week_11_NRI, week_12_NRI, week_13_NRI, week_14_NRI, week_15_NRI, week_16_NRI,
@@ -385,15 +386,15 @@ allbcrrows <- bind_rows(bcr2rowsdf, bcr4rowsdf, bcr5rowsdf, bcr6rowsdf, bcr7rows
                         bcr27rowsdf, bcr28rowsdf, bcr29rowsdf, bcr30rowsdf, bcr31rowsdf, bcr32rowsdf,
                         bcr33rowsdf, bcr34rowsdf, bcr35rowsdf, bcr36rowsdf, bcr37rowsdf)
 
-#apply BCR values to NRI list (warning! takes long processing time)
+#apply BCR values to NRI list (warning! takes multiple hours)
 for(i in 1:length(NRIlist)){
- for(j in 1:nrow(NRIlist[[i]])){
-   if((length(allbcrrows[allbcrrows$rows == rownames((NRIlist[[i]])[j,]),"BCR"]) == 1) == TRUE){
-     NRIlist[[i]][j,12] <- allbcrrows[allbcrrows$rows == rownames((NRIlist[[i]])[j,]),"BCR"]
-   } else {
-     print("Pass")
-   }
- }
+  for(j in 1:nrow(NRIlist[[i]])){
+    if((length(allbcrrows[allbcrrows$rows == rownames((NRIlist[[i]])[j,]),"BCR"]) == 1) == TRUE){
+      NRIlist[[i]][j,12] <- allbcrrows[allbcrrows$rows == rownames((NRIlist[[i]])[j,]),"BCR"]
+    } else {
+      print("Pass")
+    }
+  }
 }
 
 #combine into one dataframe
@@ -405,6 +406,64 @@ write.csv(NRIlistdf, "output/tables/all_NRI_data.csv")
 #reload dataframe if already processed
 NRIlistdf <- read.csv("output/tables/all_NRI_data.csv")
 
+## process NTI data
+#create a list of all NTI dataframes 
+NTIlist <- list(week_1_NTI, week_2_NTI, week_3_NTI, week_4_NTI, week_5_NTI, week_6_NTI, week_7_NTI, week_8_NTI,
+                week_9_NTI, week_10_NTI, week_11_NTI, week_12_NTI, week_13_NTI, week_14_NTI, week_15_NTI, week_16_NTI,
+                week_17_NTI, week_18_NTI, week_19_NTI, week_20_NTI, week_21_NTI, week_22_NTI, week_23_NTI, week_24_NTI,
+                week_25_NTI, week_26_NTI, week_27_NTI, week_28_NTI, week_29_NTI, week_30_NTI, week_31_NTI, week_32_NTI,
+                week_33_NTI, week_34_NTI, week_35_NTI, week_36_NTI, week_37_NTI, week_38_NTI, week_39_NTI, week_40_NTI,
+                week_41_NTI, week_42_NTI, week_43_NTI, week_44_NTI, week_45_NTI, week_46_NTI, week_47_NTI, week_48_NTI,
+                week_49_NTI, week_50_NTI, week_51_NTI, week_52_NTI)
+
+#create a list of all rows for each dataframe
+for(i in 1:length(NTIlist)){
+  assign(paste0("week_", i, "_NTI_rows"), as.numeric(row.names(get(paste0("week_", i, "_NTI")))))
+}
+NTIlistrows <- list(week_1_NTI_rows, week_2_NTI_rows, week_3_NTI_rows, week_4_NTI_rows, week_5_NTI_rows, week_6_NTI_rows, week_7_NTI_rows, week_8_NTI_rows,
+                    week_9_NTI_rows, week_10_NTI_rows, week_11_NTI_rows, week_12_NTI_rows, week_13_NTI_rows, week_14_NTI_rows, week_15_NTI_rows, week_16_NTI_rows,
+                    week_17_NTI_rows, week_18_NTI_rows, week_19_NTI_rows, week_20_NTI_rows, week_21_NTI_rows, week_22_NTI_rows, week_23_NTI_rows, week_24_NTI_rows,
+                    week_25_NTI_rows, week_26_NTI_rows, week_27_NTI_rows, week_28_NTI_rows, week_29_NTI_rows, week_30_NTI_rows, week_31_NTI_rows, week_32_NTI_rows,
+                    week_33_NTI_rows, week_34_NTI_rows, week_35_NTI_rows, week_36_NTI_rows, week_37_NTI_rows, week_38_NTI_rows, week_39_NTI_rows, week_40_NTI_rows,
+                    week_41_NTI_rows, week_42_NTI_rows, week_43_NTI_rows, week_44_NTI_rows, week_45_NTI_rows, week_46_NTI_rows, week_47_NTI_rows, week_48_NTI_rows,
+                    week_49_NTI_rows, week_50_NTI_rows, week_51_NTI_rows, week_52_NTI_rows)
+
+#add empty rows that will need to be added
+for(i in 1:length(NTIlist)){
+  NTIlist[[i]]$x <- rep(NA, nrow(NTIlist[[i]]))
+  NTIlist[[i]]$y <- rep(NA, nrow(NTIlist[[i]]))
+  NTIlist[[i]]$NTI <- rep(NA, nrow(NTIlist[[i]]))
+  NTIlist[[i]]$BCR <- rep(NA, nrow(NTIlist[[i]]))
+}
+
+#add coords and NTI to each subsampled community
+for(i in 1:length(NTIlist)){
+  for(j in 1:nrow(NTIlist[[i]])){
+    NTIlist[[i]]$x[j] <- xyFromCell(wewpew_26_agg, NTIlistrows[[i]][j])[,1]
+    NTIlist[[i]]$y[j] <- xyFromCell(wewpew_26_agg, NTIlistrows[[i]][j])[,2]
+  }
+  NTIlist[[i]]$NTI <- -1*NTIlist[[i]]$mntd.obs.z
+}
+
+#apply BCR values to NTI list (warning! takes takes multiple hours)
+for(i in 1:length(NTIlist)){
+  for(j in 1:nrow(NTIlist[[i]])){
+    if((length(allbcrrows[allbcrrows$rows == rownames((NTIlist[[i]])[j,]),"BCR"]) == 1) == TRUE){
+      NTIlist[[i]][j,12] <- allbcrrows[allbcrrows$rows == rownames((NTIlist[[i]])[j,]),"BCR"]
+    } else {
+      print("Pass")
+    }
+  }
+}
+
+#combine into one dataframe
+NTIlistdf <- do.call(rbind, unname(NTIlist))
+
+#export dataframe
+write.csv(NTIlistdf, "output/tables/all_NTI_data.csv")
+
+#reload dataframe if already processed
+NTIlistdf <- read.csv("output/tables/all_NTI_data.csv")
 
 ##### ADD MIGRATORY PROPORTION TO THE OTHER WEEKS #####
 
@@ -412,6 +471,7 @@ for(i in 1:52){ #loading in the files takes about a half hour
   assign(paste0("migratory_proportion_df_week", i), read.csv(paste0("output/community_data/migratory_proportion_week_", i, ".csv")))
 } 
 
+#combine migratory proportion files into list
 all_mig_props <- list(migratory_proportion_df_week1, migratory_proportion_df_week2, migratory_proportion_df_week3, migratory_proportion_df_week4,
                       migratory_proportion_df_week5, migratory_proportion_df_week6, migratory_proportion_df_week7, migratory_proportion_df_week8,
                       migratory_proportion_df_week9, migratory_proportion_df_week10, migratory_proportion_df_week11, migratory_proportion_df_week12,
@@ -426,19 +486,34 @@ all_mig_props <- list(migratory_proportion_df_week1, migratory_proportion_df_wee
                       migratory_proportion_df_week45, migratory_proportion_df_week46, migratory_proportion_df_week47, migratory_proportion_df_week48,
                       migratory_proportion_df_week49, migratory_proportion_df_week50, migratory_proportion_df_week51, migratory_proportion_df_week52)
 
+#add field for migratory proportion
 all_combined_week_NRIs_df$proportion <- rep(NA, nrow(all_combined_week_NRIs_df))
+
+#populate migratory proportion into NRI data through complete annual cycle
+#warning! extremely intensive computationally (~3 days)
 for(i in 1:nrow(all_combined_week_NRIs_df)){ 
   all_combined_week_NRIs_df[i,"proportion"] <- all_mig_props[[all_combined_week_NRIs_df[i,".id"]]][all_mig_props[[all_combined_week_NRIs_df[i,".id"]]]$community == all_combined_week_NRIs_df[i,"X"],"proportion"]
 }
-#warning: takes a long time (~3 days)
+
+#export updated NRI data file containing migratory proportion
 write.csv(all_combined_week_NRIs_df, "output/tables/combined_NRI_df.csv")
+
+#reload dataframe if already processed
 all_combined_week_NRIs_df <- read.csv("output/tables/combined_NRI_df.csv")
 
-#replicate with NTI
+## replicate process with NTI data
+
+#add field for migratory proportion
 all_combined_week_NTIs_df$proportion <- rep(NA, nrow(all_combined_week_NTIs_df))
+
+#populate migratory proportion into NRI data through complete annual cycle
+#warning! extremely intensive computationally (~3 days)
 for(i in 1:nrow(all_combined_week_NTIs_df)){ 
   all_combined_week_NTIs_df[i,"proportion"] <- all_mig_props[[all_combined_week_NTIs_df[i,".id"]]][all_mig_props[[all_combined_week_NTIs_df[i,".id"]]]$community == all_combined_week_NTIs_df[i,"X"],"proportion"]
 }
-#warning: takes a long time (~3 days)
+
+#export updated NTI data file containing migratory proportion
 write.csv(all_combined_week_NTIs_df, "output/tables/combined_NTI_df.csv")
+
+#reload dataframe if already processed
 all_combined_week_NTIs_df <- read.csv("output/tables/combined_NTI_df.csv")
