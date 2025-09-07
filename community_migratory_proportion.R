@@ -400,11 +400,9 @@ for(i in 1:length(NRIlist)){
 #combine into one dataframe
 NRIlistdf <- do.call(rbind, unname(NRIlist))
 
-#export dataframe
-write.csv(NRIlistdf, "output/tables/all_NRI_data.csv")
-
-#reload dataframe if already processed
-NRIlistdf <- read.csv("output/tables/all_NRI_data.csv")
+#convert x and y values to lat and long (for downstream analyses with same files)
+NRIlistdf$latitude <- sf_project(from = crs, to = st_crs(4326), NRIlistdf[,c("x","y")])[,2]
+NRIlistdf$longitude <- sf_project(from = crs, to = st_crs(4326), NRIlistdf[,c("x","y")])[,1]
 
 ## process NTI data
 #create a list of all NTI dataframes 
@@ -459,13 +457,15 @@ for(i in 1:length(NTIlist)){
 #combine into one dataframe
 NTIlistdf <- do.call(rbind, unname(NTIlist))
 
-#export dataframe
-write.csv(NTIlistdf, "output/tables/all_NTI_data.csv")
+#convert x and y values to lat and long (for downstream analyses with same files)
+NTIlistdf$latitude <- sf_project(from = crs, to = st_crs(4326), NTIlistdf[,c("x","y")])[,2]
+NTIlistdf$longitude <- sf_project(from = crs, to = st_crs(4326), NTIlistdf[,c("x","y")])[,1]
 
-#reload dataframe if already processed
-NTIlistdf <- read.csv("output/tables/all_NTI_data.csv")
+##### ADD MIGRATORY PROPORTION TO ALL WEEKS (CONTINETNAL POOLS) #####
 
-##### ADD MIGRATORY PROPORTION TO ALL WEEKS (ECOREGIONAL POOLS) #####
+#add field for migratory proportion
+NRIlistdf$proportion <-  rep(NA, nrow(NRIlistdf))
+NTIlistdf$proportion <-  rep(NA, nrow(NTIlistdf))
 
 for(i in 1:52){ #loading in the files takes about a half hour
   assign(paste0("migratory_proportion_df_week", i), read.csv(paste0("output/community_data/migratory_proportion_week_", i, ".csv")))
@@ -485,6 +485,43 @@ all_mig_props <- list(migratory_proportion_df_week1, migratory_proportion_df_wee
                       migratory_proportion_df_week41, migratory_proportion_df_week42, migratory_proportion_df_week43, migratory_proportion_df_week44,
                       migratory_proportion_df_week45, migratory_proportion_df_week46, migratory_proportion_df_week47, migratory_proportion_df_week48,
                       migratory_proportion_df_week49, migratory_proportion_df_week50, migratory_proportion_df_week51, migratory_proportion_df_week52)
+
+#add week column to dataframes
+#NRI
+NRIlistdf$week <- rep(NA, nrow(NRIlistdf))
+NRIlistdf[c(1:25000),"week"] <- 1
+for(i in 1:51){
+  NRIlistdf[(25000*i)+c(1:25000),"week"] <- i+1
+}
+
+#NTI
+NTIlistdf$week <- rep(NA, nrow(NTIlistdf))
+NTIlistdf[c(1:25000),"week"] <- 1
+for(i in 1:51){
+  NTIlistdf[(25000*i)+c(1:25000),"week"] <- i+1
+}
+
+#populate migratory proportion into NRI data through complete annual cycle
+#warning! extremely intensive computationally (~3 days)
+for(i in 1:nrow(NRIlistdf)){ 
+  NRIlistdf[i,"proportion"] <- all_mig_props[[NRIlistdf[i,"week"]]][all_mig_props[[NRIlistdf[i,"week"]]]$community == NRIlistdf[i,"X"],"proportion"]
+}
+#populate migratory proportion into NTI data through complete annual cycle
+#warning! extremely intensive computationally (~3 days)
+for(i in 1:nrow(NTIlistdf)){ 
+  NTIlistdf[i,"proportion"] <- all_mig_props[[NTIlistdf[i,"week"]]][all_mig_props[[NTIlistdf[i,"week"]]]$community == NTIlistdf[i,"X"],"proportion"]
+}
+
+
+#export dataframes
+write.csv(NRIlistdf, "output/tables/all_NRI_data.csv")
+write.csv(NTIlistdf, "output/tables/all_NTI_data.csv")
+
+#reload dataframes if already processed
+NRIlistdf <- read.csv("output/tables/all_NRI_data.csv")
+NTIlistdf <- read.csv("output/tables/all_NTI_data.csv")
+
+##### ADD MIGRATORY PROPORTION TO ALL WEEKS (ECOREGIONAL POOLS) #####
 
 #import each combined NTI and NRI table
 for(i in 1:52){
