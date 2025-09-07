@@ -33,24 +33,29 @@ ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = 
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
-### visualizations
-#week 1
+##### PLOT SPATIOTEMPORAL PATTERNS OF MIGRATORY PROPORTION (FIGURE 2) ####
+#plot migratory proportion distribution for week 1
+
+#load in migratory proportion data for week 1
 migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
 migratory_proportion_df_week_1 <- data.frame(migratory_proportion_df_week_1[, c("community", "nmigrant", "nspecies", "proportion")],
                                              row.names = migratory_proportion_df_week_1$community) 
-#use agg spatraster of minimum length df
+
+#load first taxonomic species at minimum community size (established in raster_download.R)
 wewpew_1_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/wewpew", product = "abundance", resolution = "hr"), 1), us), crs, method = "near"), fact=2)
 
+#add coordinates to migratory proportion week 1 data
+#generate columns for coordinate data
 migratory_proportion_df_week_1.rows <- as.numeric(migratory_proportion_df_week_1$community)
-
 migratory_proportion_df_week_1$x <- rep(NA, nrow(migratory_proportion_df_week_1))
 migratory_proportion_df_week_1$y <- rep(NA, nrow(migratory_proportion_df_week_1))
-
+#populate coordinate data
 for(i in 1:nrow(migratory_proportion_df_week_1)){
   migratory_proportion_df_week_1$x[i] <- xyFromCell(wewpew_1_agg, migratory_proportion_df_week_1.rows[i])[,1]
   migratory_proportion_df_week_1$y[i] <- xyFromCell(wewpew_1_agg, migratory_proportion_df_week_1.rows[i])[,2]
 }
 
+#plot spatial distribution of migratory proportion, week 1 (included in Figure 2)
 pdf(file = 'output/figures/community_migratory_proportion_week_1.pdf')
 country_map + 
   geom_point(data = migratory_proportion_df_week_1, alpha = 0.1, size = 0.1, aes(x = x, y = y, color = proportion)) +
@@ -70,25 +75,27 @@ country_map +
   labs(x = "", y = "")
 dev.off()
 
-
-#week 26
+#plot migratory proportion distribution for week 26
 migratory_proportion_df_week_26 <- read.csv("output/community_data/migratory_proportion_week_26.csv")
 migratory_proportion_df_week_26 <- data.frame(migratory_proportion_df_week_26[, c("community", "nmigrant", "nspecies", "proportion")],
                                               row.names = migratory_proportion_df_week_26$community) 
-#use agg spatraster of minimum length df
+
+#load first taxonomic species at minimum community size (established in raster_download.R)
 eawpew_26_agg <- aggregate(project(crop(subset(load_raster("data/ebirdst/2021/eawpew", product = "abundance", resolution = "hr"), 26), us), crs, method = "near"), fact=2)
 
+#add coordinates to migratory proportion week 26 data
+#generate columns for coordinate data
 migratory_proportion_df_week_26.rows <- as.numeric(migratory_proportion_df_week_26$community)
-
 migratory_proportion_df_week_26$x <- rep(NA, nrow(migratory_proportion_df_week_26))
 migratory_proportion_df_week_26$y <- rep(NA, nrow(migratory_proportion_df_week_26))
-
+#populate coordinate data
 for(i in 1:nrow(migratory_proportion_df_week_26)){
   migratory_proportion_df_week_26$x[i] <- xyFromCell(eawpew_26_agg, migratory_proportion_df_week_26.rows[i])[,1]
   migratory_proportion_df_week_26$y[i] <- xyFromCell(eawpew_26_agg, migratory_proportion_df_week_26.rows[i])[,2]
 }
 
-#pdf(file = 'output/figures/community_migratory_proportion_week_26.pdf')
+#plot spatial distribution of migratory proportion, week 26 (included in Figure 2)
+pdf(file = 'output/figures/community_migratory_proportion_week_26.pdf')
 country_map + 
   geom_point(data = migratory_proportion_df_week_26, alpha = 0.1, size = 0.1, aes(x = x, y = y, color = proportion)) +
   scale_color_gradient2("Mig. Prop.", low = "red", high = "blue4",
@@ -105,12 +112,12 @@ country_map +
         legend.title = element_text(margin = margin(b=20)),
         legend.key.height = unit(2, 'cm')) +
   labs(x = "", y = "")
-#dev.off()
+dev.off()
 
+##### PLOT SPATIOTEMPORAL PATTERNS OF SPECIES RICHNESS (FIGURE 2) ####
 
-### sub in species richness
-
-#week 1 species richness
+#plot spatial distribution of species richness, week 1 (included in Figure 2)
+pdf(file = 'output/figures/species_richness_week_1.pdf')
 country_map + 
   geom_point(data = migratory_proportion_df_week_1, alpha = 0.1, size = 0.1, aes(x = x, y = y, color = nspecies)) +
   scale_color_viridis("Richness", limits=c(0,92)) +
@@ -125,8 +132,10 @@ country_map +
         legend.title = element_text(margin = margin(b=20)),
         legend.key.height = unit(2, 'cm')) +
   labs(x = "", y = "")
+dev.off()
 
-#week 26 species richness
+#plot spatial distribution of species richness, week 26 (included in Figure 2)
+pdf(file = 'output/figures/species_richness_week_26.pdf')
 country_map + 
   geom_point(data = migratory_proportion_df_week_26, alpha = 0.1, size = 0.1, aes(x = x, y = y, color = nspecies)) +
   scale_color_viridis("Richness", limits=c(0,92)) +
@@ -141,18 +150,23 @@ country_map +
         legend.title = element_text(margin = margin(b=20)),
         legend.key.height = unit(2, 'cm')) +
   labs(x = "", y = "")
+dev.off()
 
-###histograms
+##### GENERATE HISTOGRAMS OF MIGRATORY PROPORTION AND SPECIES RICHNESS #####
 
-#mig. prop. histogram
+#generate dataframe to populate data for migratory proportion
 proportion_hist <- data.frame(matrix(NA, nrow = nrow(migratory_proportion_df_week_26)+nrow(migratory_proportion_df_week_1), ncol = 2))
 colnames(proportion_hist) <- c("value", "type")
+#populate migratory proportion data, week 1
 proportion_hist[c(1:nrow(migratory_proportion_df_week_1)), 1] <- migratory_proportion_df_week_1$proportion
+#populate migratory proportion data, week 26
 proportion_hist[c((nrow(migratory_proportion_df_week_1) + 1)):(nrow(proportion_hist)),1] <- migratory_proportion_df_week_26$proportion
+#add season labels
 proportion_hist[c(1:nrow(migratory_proportion_df_week_1)), 2] <- "Non-Breeding"
 proportion_hist[c((nrow(migratory_proportion_df_week_1) + 1)):(nrow(proportion_hist)),2] <- "Breeding"
-tail(proportion_hist)
 
+#plot histogram for migratory proportion (summer vs. winter) (included in Figure 2)
+pdf(file = 'output/figures/migratory_proportion_histogram.pdf')
 ggplot(proportion_hist, aes(x=value, group=type, fill=type)) +
   geom_density(alpha=0.67) +
   xlab("Proportion Species Migratory") +
@@ -160,16 +174,21 @@ ggplot(proportion_hist, aes(x=value, group=type, fill=type)) +
   guides(fill=guide_legend(title="Season")) +
   scale_fill_manual(values=c("red","blue")) +
   theme(legend.position = "bottom", text = element_text(size = 25))
+dev.off()
 
-#richness histogram
+#generate dataframe to populate data for species richness
 nspecies_hist <- data.frame(matrix(NA, nrow = nrow(migratory_proportion_df_week_26)+nrow(migratory_proportion_df_week_1), ncol = 2))
 colnames(nspecies_hist) <- c("value", "type")
+#populate species richness data, week 1
 nspecies_hist[c(1:nrow(migratory_proportion_df_week_1)), 1] <- migratory_proportion_df_week_1$nspecies
+#populate species richness data, week 26
 nspecies_hist[c((nrow(migratory_proportion_df_week_1) + 1)):(nrow(nspecies_hist)),1] <- migratory_proportion_df_week_26$nspecies
+#add season labels
 nspecies_hist[c(1:nrow(migratory_proportion_df_week_1)), 2] <- "Non-Breeding"
 nspecies_hist[c((nrow(migratory_proportion_df_week_1) + 1)):(nrow(nspecies_hist)),2] <- "Breeding"
-tail(nspecies_hist)
 
+#plot histogram for species richness (summer vs. winter) (included in Figure 2)
+pdf(file = 'output/figures/species_richness_histogram.pdf')
 ggplot(nspecies_hist, aes(x=value, group=type, fill=type)) +
   geom_density(alpha=0.67) +
   xlab("Species Richness") +
@@ -177,7 +196,7 @@ ggplot(nspecies_hist, aes(x=value, group=type, fill=type)) +
   guides(fill=guide_legend(title="Season")) +
   scale_fill_manual(values=c("red","blue")) +
   theme(legend.position = "bottom", text = element_text(size = 25))
-
+dev.off()
 
 ##### GENERATE EXTREME VALUES AND EXPLORATORY CALCULATIONS FOR RESULTS SECTION OF MANUSCRIPT #####
 
@@ -315,17 +334,6 @@ all_combined_week_NTIs_df$longitude <- sf_project(from = crs, to = st_crs(4326),
 
 #figure out all those positive longitude values
 max(all_combined_week_NRIs_df[all_combined_week_NRIs_df$longitude > 0,"y"]) #y = 8672163 -- filter that out
-
-
-
-
-lmer_test <- lmer(NRI ~ ntaxa + latitude + (1 | BCR), data = all_combined_week_NRIs_df)
-ranova(lmer_test)
-tab_model(lmer_test)
-
-lmer_test_NTI <- lmer(NTI ~ ntaxa + latitude + (1 | BCR), data = all_combined_week_NTIs_df)
-ranova(lmer_test_NTI)
-tab_model(lmer_test_NTI)
 
 
 ### get extreme values for continental pool (load all values from annual cycle analyses script)
