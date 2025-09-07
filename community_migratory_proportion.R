@@ -465,7 +465,7 @@ write.csv(NTIlistdf, "output/tables/all_NTI_data.csv")
 #reload dataframe if already processed
 NTIlistdf <- read.csv("output/tables/all_NTI_data.csv")
 
-##### ADD MIGRATORY PROPORTION TO THE OTHER WEEKS #####
+##### ADD MIGRATORY PROPORTION TO ALL WEEKS (ECOREGIONAL POOLS) #####
 
 for(i in 1:52){ #loading in the files takes about a half hour
   assign(paste0("migratory_proportion_df_week", i), read.csv(paste0("output/community_data/migratory_proportion_week_", i, ".csv")))
@@ -486,6 +486,55 @@ all_mig_props <- list(migratory_proportion_df_week1, migratory_proportion_df_wee
                       migratory_proportion_df_week45, migratory_proportion_df_week46, migratory_proportion_df_week47, migratory_proportion_df_week48,
                       migratory_proportion_df_week49, migratory_proportion_df_week50, migratory_proportion_df_week51, migratory_proportion_df_week52)
 
+#import each combined NTI and NRI table
+for(i in 1:52){
+  assign(paste0("combined_week_", i, "_NRI"), read.csv(paste0("output/bcr_tables/", i, "/combined_NRI_", i, ".csv")))
+  assign(paste0("combined_week_", i, "_NTI"), read.csv(paste0("output/bcr_tables/", i, "/combined_NTI_", i, ".csv")))
+}
+
+#create list of NRI data for all weeks
+all_combined_week_NRIs <- list(combined_week_1_NRI, combined_week_2_NRI, combined_week_3_NRI, combined_week_4_NRI,
+                               combined_week_5_NRI, combined_week_6_NRI, combined_week_7_NRI, combined_week_8_NRI,
+                               combined_week_9_NRI, combined_week_10_NRI, combined_week_11_NRI, combined_week_12_NRI,
+                               combined_week_13_NRI, combined_week_14_NRI, combined_week_15_NRI, combined_week_16_NRI,
+                               combined_week_17_NRI, combined_week_18_NRI, combined_week_19_NRI, combined_week_20_NRI,
+                               combined_week_21_NRI, combined_week_22_NRI, combined_week_23_NRI, combined_week_24_NRI,
+                               combined_week_25_NRI, combined_week_26_NRI, combined_week_27_NRI, combined_week_28_NRI,
+                               combined_week_29_NRI, combined_week_30_NRI, combined_week_31_NRI, combined_week_32_NRI,
+                               combined_week_33_NRI, combined_week_34_NRI, combined_week_35_NRI, combined_week_36_NRI,
+                               combined_week_37_NRI, combined_week_38_NRI, combined_week_39_NRI, combined_week_40_NRI,
+                               combined_week_41_NRI, combined_week_42_NRI, combined_week_43_NRI, combined_week_44_NRI,
+                               combined_week_45_NRI, combined_week_46_NRI, combined_week_47_NRI, combined_week_48_NRI,
+                               combined_week_49_NRI, combined_week_50_NRI, combined_week_51_NRI, combined_week_52_NRI)
+
+#create list of NTI data for all weeks
+all_combined_week_NTIs <- list(combined_week_1_NTI, combined_week_2_NTI, combined_week_3_NTI, combined_week_4_NTI,
+                               combined_week_5_NTI, combined_week_6_NTI, combined_week_7_NTI, combined_week_8_NTI,
+                               combined_week_9_NTI, combined_week_10_NTI, combined_week_11_NTI, combined_week_12_NTI,
+                               combined_week_13_NTI, combined_week_14_NTI, combined_week_15_NTI, combined_week_16_NTI,
+                               combined_week_17_NTI, combined_week_18_NTI, combined_week_19_NTI, combined_week_20_NTI,
+                               combined_week_21_NTI, combined_week_22_NTI, combined_week_23_NTI, combined_week_24_NTI,
+                               combined_week_25_NTI, combined_week_26_NTI, combined_week_27_NTI, combined_week_28_NTI,
+                               combined_week_29_NTI, combined_week_30_NTI, combined_week_31_NTI, combined_week_32_NTI,
+                               combined_week_33_NTI, combined_week_34_NTI, combined_week_35_NTI, combined_week_36_NTI,
+                               combined_week_37_NTI, combined_week_38_NTI, combined_week_39_NTI, combined_week_40_NTI,
+                               combined_week_41_NTI, combined_week_42_NTI, combined_week_43_NTI, combined_week_44_NTI,
+                               combined_week_45_NTI, combined_week_46_NTI, combined_week_47_NTI, combined_week_48_NTI,
+                               combined_week_49_NTI, combined_week_50_NTI, combined_week_51_NTI, combined_week_52_NTI)
+
+#turn into data frames
+all_combined_week_NRIs_df <- data.table::rbindlist(all_combined_week_NRIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
+  as.data.frame()
+all_combined_week_NTIs_df <- data.table::rbindlist(all_combined_week_NTIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
+  as.data.frame()
+
+#convert x and y values to lat and long (for downstream analyses with same files)
+all_combined_week_NRIs_df$latitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NRIs_df[,c("x","y")])[,2]
+all_combined_week_NRIs_df$longitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NRIs_df[,c("x","y")])[,1]
+all_combined_week_NTIs_df$latitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NTIs_df[,c("x","y")])[,2]
+all_combined_week_NTIs_df$longitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NTIs_df[,c("x","y")])[,1]
+
+## process for NRI data
 #add field for migratory proportion
 all_combined_week_NRIs_df$proportion <- rep(NA, nrow(all_combined_week_NRIs_df))
 
@@ -502,7 +551,6 @@ write.csv(all_combined_week_NRIs_df, "output/tables/combined_NRI_df.csv")
 all_combined_week_NRIs_df <- read.csv("output/tables/combined_NRI_df.csv")
 
 ## replicate process with NTI data
-
 #add field for migratory proportion
 all_combined_week_NTIs_df$proportion <- rep(NA, nrow(all_combined_week_NTIs_df))
 

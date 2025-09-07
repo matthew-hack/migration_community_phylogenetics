@@ -51,12 +51,6 @@ for(i in 1:nrow(migratory_proportion_df_week_1)){
   migratory_proportion_df_week_1$y[i] <- xyFromCell(wewpew_1_agg, migratory_proportion_df_week_1.rows[i])[,2]
 }
 
-
-
-country_map <- ggplot()+
-  geom_sf(data = countries) +
-  coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
-
 pdf(file = 'output/figures/community_migratory_proportion_week_1.pdf')
 country_map + 
   geom_point(data = migratory_proportion_df_week_1, alpha = 0.1, size = 0.1, aes(x = x, y = y, color = proportion)) +
@@ -93,9 +87,6 @@ for(i in 1:nrow(migratory_proportion_df_week_26)){
   migratory_proportion_df_week_26$x[i] <- xyFromCell(eawpew_26_agg, migratory_proportion_df_week_26.rows[i])[,1]
   migratory_proportion_df_week_26$y[i] <- xyFromCell(eawpew_26_agg, migratory_proportion_df_week_26.rows[i])[,2]
 }
-
-
-
 
 #pdf(file = 'output/figures/community_migratory_proportion_week_26.pdf')
 country_map + 
@@ -188,12 +179,14 @@ ggplot(nspecies_hist, aes(x=value, group=type, fill=type)) +
   theme(legend.position = "bottom", text = element_text(size = 25))
 
 
-### get extreme values
-#(load all_BCR values from annual cycle analyses script)
+##### GENERATE EXTREME VALUES AND EXPLORATORY CALCULATIONS FOR RESULTS SECTION OF MANUSCRIPT #####
+
+#load complete NRI and NTI datasets generated in 3_community_migratory_proportion.R
+all_combined_week_NRIs_df <- read.csv("output/tables/combined_NRI_df.csv")
+all_combined_week_NTIs_df <- read.csv("output/tables/combined_NTI_df.csv")
 
 all_combined_week_NRIs_df <- data.table::rbindlist(all_combined_week_NRIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
   as.data.frame()
-
 
 all_combined_week_NTIs_df <- data.table::rbindlist(all_combined_week_NTIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
   as.data.frame()
