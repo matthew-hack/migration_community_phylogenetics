@@ -200,37 +200,57 @@ dev.off()
 
 ##### GENERATE EXTREME VALUES AND EXPLORATORY CALCULATIONS FOR RESULTS SECTION OF MANUSCRIPT #####
 
+### EXPLORATORY DATA, SPECIES RICHNESS AND MIGRATORY PROPORTION ###
+
 #load complete NRI and NTI datasets generated in 3_community_migratory_proportion.R
 all_combined_week_NRIs_df <- read.csv("output/tables/combined_NRI_df.csv")
 all_combined_week_NTIs_df <- read.csv("output/tables/combined_NTI_df.csv")
-
 all_combined_week_NRIs_df <- data.table::rbindlist(all_combined_week_NRIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
   as.data.frame()
-
 all_combined_week_NTIs_df <- data.table::rbindlist(all_combined_week_NTIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
   as.data.frame()
 
-max(na.omit(all_combined_week_NRIs_df$NRI)) #7.109175
-min(na.omit(all_combined_week_NRIs_df$NRI)) #-4.155872
-median(na.omit(all_combined_week_NRIs_df$NRI)) #-0.2703786
-sd(na.omit(all_combined_week_NRIs_df$NRI)) #1.039971
-length(na.omit(all_combined_week_NRIs_df$NRI[all_combined_week_NRIs_df$NRI > 0]))/length(na.omit(all_combined_week_NRIs_df$NRI)) #0.389
-
-max(na.omit(all_combined_week_NTIs_df$NTI)) #4.776999
-min(na.omit(all_combined_week_NTIs_df$NTI)) #-4.575684
-median(na.omit(all_combined_week_NTIs_df$NTI)) #0.3231434
-sd(na.omit(all_combined_week_NTIs_df$NTI)) #0.973363
-length(na.omit(all_combined_week_NTIs_df$NTI[all_combined_week_NTIs_df$NTI > 0]))/length(na.omit(all_combined_week_NTIs_df$NTI)) #0.626
-
-
+#calculate exploratory values for species richness
 max(na.omit(all_combined_week_NTIs_df$ntaxa)) #109
 min(na.omit(all_combined_week_NTIs_df$ntaxa)) #0
 median(na.omit(all_combined_week_NTIs_df$ntaxa)) #34
 sd(na.omit(all_combined_week_NTIs_df$ntaxa)) #16.13621
 
-max(na.omit(all_combined_week_NTIs_df$ntaxa))
+#reload migratory proportion data (generated in 3_community_migratory_proportion.R)
+for(i in 1:52){ #loading in the files takes about a half hour
+  assign(paste0("migratory_proportion_df_week", i), read.csv(paste0("output/community_data/migratory_proportion_week_", i, ".csv")))
+} 
 
-#breeding
+#combine migratory proportion files into list
+all_mig_props <- list(migratory_proportion_df_week1, migratory_proportion_df_week2, migratory_proportion_df_week3, migratory_proportion_df_week4,
+                      migratory_proportion_df_week5, migratory_proportion_df_week6, migratory_proportion_df_week7, migratory_proportion_df_week8,
+                      migratory_proportion_df_week9, migratory_proportion_df_week10, migratory_proportion_df_week11, migratory_proportion_df_week12,
+                      migratory_proportion_df_week13, migratory_proportion_df_week14, migratory_proportion_df_week15, migratory_proportion_df_week16,
+                      migratory_proportion_df_week17, migratory_proportion_df_week18, migratory_proportion_df_week19, migratory_proportion_df_week20,
+                      migratory_proportion_df_week21, migratory_proportion_df_week22, migratory_proportion_df_week23, migratory_proportion_df_week24,
+                      migratory_proportion_df_week25, migratory_proportion_df_week26, migratory_proportion_df_week27, migratory_proportion_df_week28,
+                      migratory_proportion_df_week29, migratory_proportion_df_week30, migratory_proportion_df_week31, migratory_proportion_df_week32,
+                      migratory_proportion_df_week33, migratory_proportion_df_week34, migratory_proportion_df_week35, migratory_proportion_df_week36,
+                      migratory_proportion_df_week37, migratory_proportion_df_week38, migratory_proportion_df_week39, migratory_proportion_df_week40,
+                      migratory_proportion_df_week41, migratory_proportion_df_week42, migratory_proportion_df_week43, migratory_proportion_df_week44,
+                      migratory_proportion_df_week45, migratory_proportion_df_week46, migratory_proportion_df_week47, migratory_proportion_df_week48,
+                      migratory_proportion_df_week49, migratory_proportion_df_week50, migratory_proportion_df_week51, migratory_proportion_df_week52)
+
+all_mig_prop_df <- data.table::rbindlist(all_mig_props, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
+  as.data.frame()
+
+#calculate exploratory values for migratory proportion
+max(na.omit(all_combined_week_NTIs_df$ntaxa)) #109
+min(na.omit(all_combined_week_NTIs_df$ntaxa)) #0
+median(na.omit(all_combined_week_NTIs_df$ntaxa)) #34
+sd(na.omit(all_combined_week_NTIs_df$ntaxa)) #16.13621
+
+max(all_mig_prop_df$proportion[is.finite(all_mig_prop_df$proportion)]) #1
+min(na.omit(all_mig_prop_df$proportion)) #0
+median(na.omit(all_mig_prop_df$proportion)) #0.857
+sd(all_mig_prop_df$proportion[is.finite(all_mig_prop_df$proportion)]) #0.124
+
+#calculate exploratory statistics for species richness and migratory proportion (summer)
 max(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 26,"ntaxa"])) #84
 min(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 26,"ntaxa"])) #1
 mean(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 26,"ntaxa"])) #40.08
@@ -238,7 +258,7 @@ sd(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 26,"ntaxa"
 mean(na.omit(all_combined_week_NRIs_df[all_combined_week_NRIs_df$.id == 26,"proportion"])) #0.885
 sd(na.omit(all_combined_week_NRIs_df[all_combined_week_NRIs_df$.id == 26,"proportion"])) #0.076
 
-#wintering
+#calculate exploratory statistics for species richness and migratory proportion (winter)
 max(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 1,"ntaxa"])) #78
 min(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 1,"ntaxa"])) #1
 mean(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 1,"ntaxa"])) #23.34
@@ -246,7 +266,7 @@ sd(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 1,"ntaxa"]
 mean(na.omit(all_combined_week_NRIs_df[all_combined_week_NRIs_df$.id == 1,"proportion"])) #0.748
 sd(na.omit(all_combined_week_NRIs_df[all_combined_week_NRIs_df$.id == 1,"proportion"])) #0.151
 
-#different BCRs
+### COMPARING VALUES IN DIFFERENT BCRS ###
 #BCR 12
 mean(na.omit(all_combined_week_NTIs_df[all_combined_week_NTIs_df$.id == 26 & 
                                          all_combined_week_NTIs_df$BCR == 12,"ntaxa"])) #summer: 58.13
@@ -285,30 +305,26 @@ mean(na.omit(all_combined_week_NRIs_df[all_combined_week_NRIs_df$.id == 1 &
 sd(na.omit(all_combined_week_NRIs_df[all_combined_week_NRIs_df$.id == 1 & 
                                        all_combined_week_NRIs_df$BCR == 31,"proportion"])) #SD winter: 0.041
 
-#### try to get nmigrant data again
+### ECOREGIONAL DATASET EXTREME VALUES ###
 
-for(i in 1:52){
-  assign(paste0("week_", i, "_mig_prop"), read.csv(paste0("output/community_data/migratory_proportion_week_", i, ".csv"), row.names=1))
-}
+#calculate exploratory values for NRI
+max(na.omit(all_combined_week_NRIs_df$NRI)) #7.109175
+min(na.omit(all_combined_week_NRIs_df$NRI)) #-4.155872
+median(na.omit(all_combined_week_NRIs_df$NRI)) #-0.2703786
+sd(na.omit(all_combined_week_NRIs_df$NRI)) #1.039971
+length(na.omit(all_combined_week_NRIs_df$NRI[all_combined_week_NRIs_df$NRI > 0]))/length(na.omit(all_combined_week_NRIs_df$NRI)) #0.389
 
-mig_prop_list <- list(week_1_mig_prop, week_2_mig_prop, week_3_mig_prop, week_4_mig_prop, week_5_mig_prop, week_6_mig_prop, week_7_mig_prop, week_8_mig_prop,
-                week_9_mig_prop, week_10_mig_prop, week_11_mig_prop, week_12_mig_prop, week_13_mig_prop, week_14_mig_prop, week_15_mig_prop, week_16_mig_prop,
-                week_17_mig_prop, week_18_mig_prop, week_19_mig_prop, week_20_mig_prop, week_21_mig_prop, week_22_mig_prop, week_23_mig_prop, week_24_mig_prop,
-                week_25_mig_prop, week_26_mig_prop, week_27_mig_prop, week_28_mig_prop, week_29_mig_prop, week_30_mig_prop, week_31_mig_prop, week_32_mig_prop,
-                week_33_mig_prop, week_34_mig_prop, week_35_mig_prop, week_36_mig_prop, week_37_mig_prop, week_38_mig_prop, week_39_mig_prop, week_40_mig_prop,
-                week_41_mig_prop, week_42_mig_prop, week_43_mig_prop, week_44_mig_prop, week_45_mig_prop, week_46_mig_prop, week_47_mig_prop, week_48_mig_prop,
-                week_49_mig_prop, week_50_mig_prop, week_51_mig_prop, week_52_mig_prop)
+#calculate exploratory values for NTI
+max(na.omit(all_combined_week_NTIs_df$NTI)) #4.776999
+min(na.omit(all_combined_week_NTIs_df$NTI)) #-4.575684
+median(na.omit(all_combined_week_NTIs_df$NTI)) #0.3231434
+sd(na.omit(all_combined_week_NTIs_df$NTI)) #0.973363
+length(na.omit(all_combined_week_NTIs_df$NTI[all_combined_week_NTIs_df$NTI > 0]))/length(na.omit(all_combined_week_NTIs_df$NTI)) #0.626
 
-all_mig_prop_df <- data.table::rbindlist(mig_prop_list, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
-  as.data.frame()
+##### GENERATE VISUALIZATIONS FOR SUPPLEMENTAL FIGURE 2 #####
 
-#this dataframe can do statistics for first results paragraph
+#generate histograms for NRI and NTI values (ecoregional dataset)
 
-median(na.omit(all_mig_prop_df$proportion)) #0.857
-
-
-
-#histogram for NRI and NTI values (BCR-level)
 nri_nti_hist <- data.frame(matrix(NA, nrow = nrow(all_combined_week_NRIs_df)+nrow(all_combined_week_NTIs_df), ncol = 2))
 colnames(nri_nti_hist) <- c("value", "type")
 nri_nti_hist[c(1:nrow(all_combined_week_NRIs_df)), 1] <- all_combined_week_NRIs_df$NRI
