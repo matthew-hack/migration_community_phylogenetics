@@ -846,248 +846,9 @@ pdf(file = 'output/figures/NRI_mig_prop_turnover_plot_ecoregional.pdf')
 ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
 dev.off()
 
+##### TEST FOR SPATIAL AUTOCORRELATION #####
 
-### try another new method: sdmTMB
-
-mesh <- make_mesh(NTI_turnover_ratios, xy_cols = c("longitude", "latitude"), cutoff = 50)
-
-### regional
-### regional NTI
-#NTI ~ richness
-sdmTMB_NTI_richness <- sdmTMB(
-  formula = NTI_turnover ~ richness_turnover,
-  data = NTI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"  # enables spatial random field
-)
-tidy(sdmTMB_NTI_richness, conf.int = TRUE)
-
-#NTI ~ mig. prop.
-sdmTMB_NTI_mig_prop <- sdmTMB(
-  formula = NTI_turnover ~ mig_prop_turnover,
-  data = NTI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_mig_prop, conf.int = TRUE)
-
-#NTI ~ richness + mig. prop.
-sdmTMB_NTI_mig_prop_richness <- sdmTMB(
-  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover,
-  data = NTI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_mig_prop_richness, conf.int = TRUE)
-
-#NTI ~ richness + mig. prop. + interaction
-sdmTMB_NTI_mig_prop_richness_interaction <- sdmTMB(
-  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
-  data = NTI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_mig_prop_richness_interaction, conf.int = TRUE)
-
-#NTI ~ null
-sdmTMB_NTI_null <- sdmTMB(
-  formula = NTI_turnover ~ 1,
-  data = NTI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_null, conf.int = TRUE)
-
-#create function to compare sdmTMB models
-compare_sdmTMB_models <- function(..., sort = TRUE) {
-  models <- list(...)
-  model_names <- as.character(substitute(list(...)))[-1]
-  
-  out <- data.frame(
-    Model = model_names,
-    AIC = sapply(models, AIC),
-    BIC = sapply(models, BIC),
-    logLik = sapply(models, logLik)
-  )
-  
-  out$Delta_AIC <- out$AIC - min(out$AIC)
-  out$Weight <- exp(-0.5 * out$Delta_AIC)
-  out$Weight <- out$Weight / sum(out$Weight)
-  
-  if (sort) out <- out[order(out$AIC), ]
-  rownames(out) <- NULL
-  return(out)
-}
-
-#model selection
-compare_sdmTMB_models(sdmTMB_NTI_richness, sdmTMB_NTI_mig_prop, sdmTMB_NTI_mig_prop_richness,
-                      sdmTMB_NTI_mig_prop_richness_interaction, sdmTMB_NTI_null)
-
-
-###regional NRI
-### regional NRI
-#NRI ~ richness
-sdmTMB_NRI_richness <- sdmTMB(
-  formula = NRI_turnover ~ richness_turnover,
-  data = NRI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"  # enables spatial random field
-)
-tidy(sdmTMB_NRI_richness, conf.int = TRUE)
-
-#NRI ~ mig. prop.
-sdmTMB_NRI_mig_prop <- sdmTMB(
-  formula = NRI_turnover ~ mig_prop_turnover,
-  data = NRI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_mig_prop, conf.int = TRUE)
-
-#NRI ~ richness + mig. prop.
-sdmTMB_NRI_mig_prop_richness <- sdmTMB(
-  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover,
-  data = NRI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_mig_prop_richness, conf.int = TRUE)
-
-#NRI ~ richness + mig. prop. + interaction
-sdmTMB_NRI_mig_prop_richness_interaction <- sdmTMB(
-  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
-  data = NRI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_mig_prop_richness_interaction, conf.int = TRUE)
-
-#NRI ~ null
-sdmTMB_NRI_null <- sdmTMB(
-  formula = NRI_turnover ~ 1,
-  data = NRI_turnover_ratios,
-  mesh = mesh,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_null, conf.int = TRUE)
-
-#model selection
-compare_sdmTMB_models(sdmTMB_NRI_richness, sdmTMB_NRI_mig_prop, sdmTMB_NRI_mig_prop_richness,
-                      sdmTMB_NRI_mig_prop_richness_interaction, sdmTMB_NRI_null)
-
-
-
-
-
-### continental
-### continental NTI
-mesh_continental <- make_mesh(NTI_turnover_ratios_continental, xy_cols = c("latitude", "longitude"), cutoff = 50)
-
-#NTI ~ richness
-sdmTMB_NTI_richness_continental <- sdmTMB(
-  formula = NTI_turnover ~ richness_turnover,
-  data = NTI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"  # enables spatial random field
-)
-tidy(sdmTMB_NTI_richness_continental, conf.int = TRUE)
-
-#NTI ~ mig. prop.
-sdmTMB_NTI_mig_prop_continental <- sdmTMB(
-  formula = NTI_turnover ~ mig_prop_turnover,
-  data = NTI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_mig_prop_continental, conf.int = TRUE)
-
-#NTI ~ richness + mig. prop.
-sdmTMB_NTI_mig_prop_richness_continental <- sdmTMB(
-  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover,
-  data = NTI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_mig_prop_richness_continental, conf.int = TRUE)
-
-#NTI ~ richness + mig. prop. + interaction
-sdmTMB_NTI_mig_prop_richness_interaction_continental <- sdmTMB(
-  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
-  data = NTI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_mig_prop_richness_interaction_continental, conf.int = TRUE)
-
-#NTI ~ null
-sdmTMB_NTI_null_continental <- sdmTMB(
-  formula = NTI_turnover ~ 1,
-  data = NTI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NTI_null_continental, conf.int = TRUE)
-
-#model selection
-compare_sdmTMB_models(sdmTMB_NTI_richness_continental, sdmTMB_NTI_mig_prop_continental, sdmTMB_NTI_mig_prop_richness_continental,
-                      sdmTMB_NTI_mig_prop_richness_interaction_continental, sdmTMB_NTI_null_continental)
-
-
-
-### continental NRI
-
-#NRI ~ richness
-sdmTMB_NRI_richness_continental <- sdmTMB(
-  formula = NRI_turnover ~ richness_turnover,
-  data = NRI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"  # enables spatial random field
-)
-tidy(sdmTMB_NRI_richness_continental, conf.int = TRUE)
-
-#NRI ~ mig. prop.
-sdmTMB_NRI_mig_prop_continental <- sdmTMB(
-  formula = NRI_turnover ~ mig_prop_turnover,
-  data = NRI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_mig_prop_continental, conf.int = TRUE)
-
-#NRI ~ richness + mig. prop.
-sdmTMB_NRI_mig_prop_richness_continental <- sdmTMB(
-  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover,
-  data = NRI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_mig_prop_richness_continental, conf.int = TRUE)
-
-#NRI ~ richness + mig. prop. + interaction
-sdmTMB_NRI_mig_prop_richness_interaction_continental <- sdmTMB(
-  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
-  data = NRI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_mig_prop_richness_interaction_continental, conf.int = TRUE)
-
-#NRI ~ null
-sdmTMB_NRI_null_continental <- sdmTMB(
-  formula = NRI_turnover ~ 1,
-  data = NRI_turnover_ratios_continental,
-  mesh = mesh_continental,
-  spatial = "on"
-)
-tidy(sdmTMB_NRI_null_continental, conf.int = TRUE)
-
-#model selection
-compare_sdmTMB_models(sdmTMB_NRI_richness_continental, sdmTMB_NRI_mig_prop_continental, sdmTMB_NRI_mig_prop_richness_continental,
-                      sdmTMB_NRI_mig_prop_richness_interaction_continental, sdmTMB_NRI_null_continental)
-
-#test for spatial autocorrelation
-
-#NTI turnover ratios
+#test for spatial autocorrelation in NTI values (ecoregional dataset)
 test_NTI_turnover_ratios <- NTI_turnover_ratios[,-c(3,9)]
 test_NTI_turnover_ratios <- test_NTI_turnover_ratios[complete.cases(test_NTI_turnover_ratios),]
 coords <- cbind(test_NTI_turnover_ratios$longitude, test_NTI_turnover_ratios$latitude)
@@ -1099,7 +860,7 @@ moran.test(residuals(model), lw)
 #p-value: <2.2 e -16
 #Moran I statistic: 1.3426 e -01
 
-#NRI turnover ratios
+#test for spatial autocorrelation in NRI values (ecoregional dataset)
 test_NRI_turnover_ratios <- NRI_turnover_ratios[,-c(3,9)]
 test_NRI_turnover_ratios <- test_NRI_turnover_ratios[complete.cases(test_NRI_turnover_ratios),]
 coords2 <- cbind(test_NRI_turnover_ratios$longitude, test_NRI_turnover_ratios$latitude)
@@ -1111,7 +872,7 @@ moran.test(residuals(model2), lw2)
 #p-value: <2.2 e -16
 #Moran I statistic: 2.4597 e -01
 
-#NTI turnover ratios continental
+#test for spatial autocorrelation in NTI values (continental dataset)
 test_NTI_turnover_ratios_continental <- NTI_turnover_ratios_continental[,-c(3,9)]
 test_NTI_turnover_ratios_continental <- test_NTI_turnover_ratios_continental[complete.cases(test_NTI_turnover_ratios_continental),]
 coords3 <- cbind(test_NTI_turnover_ratios_continental$longitude, test_NTI_turnover_ratios_continental$latitude)
@@ -1123,7 +884,7 @@ moran.test(residuals(model3), lw3)
 #p-value: <2.2 e -16
 #Moran I statistic: 1.98667 e -01
 
-#NTI turnover ratios continental
+#test for spatial autocorrelation in NRI values (continental dataset)
 test_NRI_turnover_ratios_continental <- NRI_turnover_ratios_continental[,-c(3,9)]
 test_NRI_turnover_ratios_continental <- test_NRI_turnover_ratios_continental[complete.cases(test_NRI_turnover_ratios_continental),]
 coords4 <- cbind(test_NRI_turnover_ratios_continental$longitude, test_NRI_turnover_ratios_continental$latitude)
@@ -1136,20 +897,259 @@ moran.test(residuals(model4), lw4)
 #Moran I statistic: 3.1606 e -01
 
 
-### Consider re-doing Figure 4
+##### CARRY OUT GLMM MODELS USING SDMTMB PACKAGE #####
 
+#all results from tidy output comprise Table 1
+
+### ECOREGIONAL DATASET (TABLE 1A)
+
+## ecoregional NTI
+
+#model NTI ~ richness (ecoregional)
+mesh <- make_mesh(NTI_turnover_ratios, xy_cols = c("longitude", "latitude"), cutoff = 50)
+sdmTMB_NTI_richness <- sdmTMB(
+  formula = NTI_turnover ~ richness_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"  # enables spatial random field
+)
+tidy(sdmTMB_NTI_richness, conf.int = TRUE) 
+
+#model NTI ~ migratory proportion (ecoregional)
+sdmTMB_NTI_mig_prop <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop, conf.int = TRUE)
+
+#model NTI ~ richness + migratory proportion (ecoregional)
+sdmTMB_NTI_mig_prop_richness <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness, conf.int = TRUE)
+
+#model NTI ~ richness + migratory proportion + interaction (ecoregional)
+sdmTMB_NTI_mig_prop_richness_interaction <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness_interaction, conf.int = TRUE)
+
+#null model (spatial structure only -- NTI ecoregional)
+sdmTMB_NTI_null <- sdmTMB(
+  formula = NTI_turnover ~ 1,
+  data = NTI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_null, conf.int = TRUE)
+
+#write function to compare sdmTMB models (analogous aictab() function in 'AICcmodavg' package)
+compare_sdmTMB_models <- function(..., sort = TRUE) {
+  models <- list(...)
+  model_names <- as.character(substitute(list(...)))[-1]
+  out <- data.frame(
+    Model = model_names, #name of the sdmTMB model
+    AIC = sapply(models, AIC), #AIC calculation
+    BIC = sapply(models, BIC), #BIC calculation
+    logLik = sapply(models, logLik) #logLik calculation
+  )
+  out$Delta_AIC <- out$AIC - min(out$AIC) #delta AIC calculation
+  out$Weight <- exp(-0.5 * out$Delta_AIC) #calculate weight
+  out$Weight <- out$Weight / sum(out$Weight)
+  if (sort) out <- out[order(out$AIC), ]
+  rownames(out) <- NULL
+  return(out)
+}
+
+#perform model selection for ecoregional NTI models
+compare_sdmTMB_models(sdmTMB_NTI_richness, sdmTMB_NTI_mig_prop, sdmTMB_NTI_mig_prop_richness,
+                      sdmTMB_NTI_mig_prop_richness_interaction, sdmTMB_NTI_null)
+
+## ecoregional NRI
+
+#model NRI ~ richness (ecoregional)
+sdmTMB_NRI_richness <- sdmTMB(
+  formula = NRI_turnover ~ richness_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"  
+)
+tidy(sdmTMB_NRI_richness, conf.int = TRUE)
+
+#model NRI ~ migratory proportion (ecoregional)
+sdmTMB_NRI_mig_prop <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop, conf.int = TRUE)
+
+#model NRI ~ richness + migratory proportion (ecoregional)
+sdmTMB_NRI_mig_prop_richness <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness, conf.int = TRUE)
+
+#model NRI ~ richness + migratory proportion + interaction (ecoregional)
+sdmTMB_NRI_mig_prop_richness_interaction <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness_interaction, conf.int = TRUE)
+
+#null model (spatial structure only -- NTI ecoregional)
+sdmTMB_NRI_null <- sdmTMB(
+  formula = NRI_turnover ~ 1,
+  data = NRI_turnover_ratios,
+  mesh = mesh,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_null, conf.int = TRUE)
+
+#perform model selection for ecoregional NRI models
+compare_sdmTMB_models(sdmTMB_NRI_richness, sdmTMB_NRI_mig_prop, sdmTMB_NRI_mig_prop_richness,
+                      sdmTMB_NRI_mig_prop_richness_interaction, sdmTMB_NRI_null)
+
+### CONTINENTAL DATASET (TABLE 1B)
+
+## ecoregional NTI
+
+#model NTI ~ richness (continental)
+mesh_continental <- make_mesh(NTI_turnover_ratios_continental, xy_cols = c("latitude", "longitude"), cutoff = 50)
+sdmTMB_NTI_richness_continental <- sdmTMB(
+  formula = NTI_turnover ~ richness_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on" 
+)
+tidy(sdmTMB_NTI_richness_continental, conf.int = TRUE)
+
+#model NTI ~ migratory proportion (continental)
+sdmTMB_NTI_mig_prop_continental <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_continental, conf.int = TRUE)
+
+#model NTI ~ richness + migratory proportion (continental)
+sdmTMB_NTI_mig_prop_richness_continental <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness_continental, conf.int = TRUE)
+
+#model NTI ~ richness + migratory proportion + interaction (continental)
+sdmTMB_NTI_mig_prop_richness_interaction_continental <- sdmTMB(
+  formula = NTI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_mig_prop_richness_interaction_continental, conf.int = TRUE)
+
+#null model (spatial structure only -- NTI continetnal)
+sdmTMB_NTI_null_continental <- sdmTMB(
+  formula = NTI_turnover ~ 1,
+  data = NTI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NTI_null_continental, conf.int = TRUE)
+
+#perform model selection for continental NTI models
+compare_sdmTMB_models(sdmTMB_NTI_richness_continental, sdmTMB_NTI_mig_prop_continental, sdmTMB_NTI_mig_prop_richness_continental,
+                      sdmTMB_NTI_mig_prop_richness_interaction_continental, sdmTMB_NTI_null_continental)
+
+
+
+## continental NRI
+
+#model NRI ~ richness (continental)
+sdmTMB_NRI_richness_continental <- sdmTMB(
+  formula = NRI_turnover ~ richness_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"  
+)
+tidy(sdmTMB_NRI_richness_continental, conf.int = TRUE)
+
+#model NRI ~ migratory proportion (continental)
+sdmTMB_NRI_mig_prop_continental <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_continental, conf.int = TRUE)
+
+#model NRI ~ richness + migratory proportion (continental)
+sdmTMB_NRI_mig_prop_richness_continental <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness_continental, conf.int = TRUE)
+
+#model NRI ~ richness + migratory proportion + interaction (continental)
+sdmTMB_NRI_mig_prop_richness_interaction_continental <- sdmTMB(
+  formula = NRI_turnover ~ mig_prop_turnover + richness_turnover + mig_prop_turnover*richness_turnover,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_mig_prop_richness_interaction_continental, conf.int = TRUE)
+
+#null model (spatial structure only -- NRI continetnal)
+sdmTMB_NRI_null_continental <- sdmTMB(
+  formula = NRI_turnover ~ 1,
+  data = NRI_turnover_ratios_continental,
+  mesh = mesh_continental,
+  spatial = "on"
+)
+tidy(sdmTMB_NRI_null_continental, conf.int = TRUE)
+
+#perform model selection for continental NRI models
+compare_sdmTMB_models(sdmTMB_NRI_richness_continental, sdmTMB_NRI_mig_prop_continental, sdmTMB_NRI_mig_prop_richness_continental,
+                      sdmTMB_NRI_mig_prop_richness_interaction_continental, sdmTMB_NRI_null_continental)
+
+
+##### GENERATE VISUALS FOR FIGURE 3 #####
+
+#input new coordinate system for plots of North America
 crs_102004 <- "+proj=lcc +lat_1=33 +lat_2=45 +lat_0=39 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
 
+#download North America continent sf file and reproject to chosen coordinate system
 na_basemap <- ne_countries(continent = "North America", returnclass = "sf")
 na_basemap_proj <- st_transform(na_basemap, crs = crs_102004)
 
+#convert ecoregional NRI seasonal turnover data to sf format for plotting purposes
 NRI_turnover_ratios_sf <- st_as_sf(NRI_turnover_ratios, coords = c("longitude", "latitude"), crs = 4326)
 NRI_turnover_ratios_proj <- st_transform(NRI_turnover_ratios_sf, crs = crs_102004)
 NRI_turnover_ratios_proj <- NRI_turnover_ratios_proj %>%
   mutate(X = st_coordinates(.)[,1],
          Y = st_coordinates(.)[,2])
 
-#plot migratory proportion difference
+#plot seasonal turnover in migratory proportion
+pdf(file = 'output/figures/seasonal_turnover_migratory_proportion.pdf')
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_proj, aes(color = mig_prop_turnover), size = 0.75) +
@@ -1163,8 +1163,10 @@ ggplot() +
                         low = "red",
                         mid = "white",
                         high = "blue")
+dev.off()
 
-#plot species richness difference
+#plot seasonal turnover in species richness
+pdf(file = 'output/figures/species_richness.pdf')
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_proj, aes(color = richness_turnover), size = 0.75) +
@@ -1178,8 +1180,10 @@ ggplot() +
                         low = "red",
                         mid = "white",
                         high = "blue") 
+dev.off()
 
-#plot regional NRI turnover
+#plot seasonal turnover in NRI (ecoregional pool)
+pdf(file = 'output/figures/NRI_turnover_ecoregional.pdf')
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_proj, aes(color = NRI_turnover), size = 0.75) +
@@ -1193,11 +1197,12 @@ ggplot() +
                         low = "red",
                         mid = "white",
                         high = "blue")
+dev.off()
 
-#add NTI ratios to this projection dataframe
+#add NTI ratio data to same dataframe
 NRI_turnover_ratios_proj$NTI_turnover <- NTI_turnover_ratios$NTI_turnover
 
-#plot regional NTI turnover
+#plot seasonal turnover in NTI (ecoregional pool)
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_proj, aes(color = NTI_turnover), size = 0.75) +
@@ -1212,15 +1217,14 @@ ggplot() +
                         mid = "white",
                         high = "blue")
 
-#continental data plotting
+#convert continental NRI seasonal turnover data to sf format for plotting purposes
 NRI_turnover_ratios_continental_sf <- st_as_sf(NRI_turnover_ratios_continental, coords = c("longitude", "latitude"), crs = 4326)
 NRI_turnover_ratios_continental_proj <- st_transform(NRI_turnover_ratios_continental_sf, crs = crs_102004)
 NRI_turnover_ratios_continental_proj <- NRI_turnover_ratios_continental_proj %>%
   mutate(X = st_coordinates(.)[,1],
          Y = st_coordinates(.)[,2])
 
-
-#plot continental NRI turnover
+#plot seasonal turnover in NRI (continental pool)
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_continental_proj, aes(color = NRI_turnover), size = 0.75) +
@@ -1235,10 +1239,11 @@ ggplot() +
                         mid = "white",
                         high = "blue")
 
-#plot continental NTI turnover
 
+#add NTI turnover data to same dataframe
 NRI_turnover_ratios_continental_proj$NTI_turnover <- NTI_turnover_ratios_continental$NTI_turnover
 
+#plot seasonal turnover in NTI (continental pool)
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_continental_proj, aes(color = NTI_turnover), size = 0.75) +
