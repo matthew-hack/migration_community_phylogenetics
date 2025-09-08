@@ -141,7 +141,311 @@ ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = 
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
-###### analyses start here
+##### CREATE A HISTOGRAM WITH DISTRIBUTIONS OF PHYLOGENETIC DISTANCE MEANS ACROSS ALL BCRS (SUPPLEMENTAL FIGURE 1) #####
+
+#load in ecoregional community data for week 26 (summer)
+for(i in 5:37){
+  assign(paste0("bcr_", i, "_week_26"), read.csv(paste0("output/bcr_community_data/26/community_26_bcr_", i, ".csv")))
+} #takes about a half hour
+
+#load in ecoregional community data for week 1 (winter)
+for(i in 5:37){
+  assign(paste0("bcr_", i, "_week_1"), read.csv(paste0("output/bcr_community_data/1/community_1_bcr_", i, ".csv")))
+} #takes about a half hour
+
+### process summer data
+#create list of all week 26 community matrices
+bcr_week_26_list <- list(bcr_5_week_26, bcr_6_week_26, bcr_7_week_26, bcr_8_week_26, bcr_9_week_26, bcr_10_week_26,
+                         bcr_11_week_26, bcr_12_week_26, bcr_13_week_26, bcr_14_week_26, bcr_15_week_26, bcr_16_week_26,
+                         bcr_17_week_26, bcr_18_week_26, bcr_19_week_26, bcr_20_week_26, bcr_21_week_26, bcr_22_week_26,
+                         bcr_23_week_26, bcr_24_week_26, bcr_25_week_26, bcr_26_week_26, bcr_27_week_26, bcr_28_week_26,
+                         bcr_29_week_26, bcr_30_week_26, bcr_31_week_26, bcr_32_week_26, bcr_33_week_26, bcr_34_week_26,
+                         bcr_35_week_26, bcr_36_week_26, bcr_37_week_26)
+
+#generate c scores for all species combinations (denotes whether species combinations are found in sympatry more or less often than random chance)
+for(i in 5:37){
+  df <- as.data.frame(bcr_week_26_list[i-4])
+  df <- df[sample(nrow(df), nrow(df)/100, replace=FALSE),]
+  ecospot <- ecospat.Cscore(df, 2, outpath="output/tables")
+  assign(paste0("c_scores_bcr_", i, "_week_26"), read.delim("output/tables/Cscores.txt"))
+}
+
+#create list of all c score matrices
+c_scores_bcr_week_26_list <- list(c_scores_bcr_5_week_26, c_scores_bcr_6_week_26, c_scores_bcr_7_week_26, c_scores_bcr_8_week_26, c_scores_bcr_9_week_26, c_scores_bcr_10_week_26,
+                                  c_scores_bcr_11_week_26, c_scores_bcr_12_week_26, c_scores_bcr_13_week_26, c_scores_bcr_14_week_26, c_scores_bcr_15_week_26, c_scores_bcr_16_week_26,
+                                  c_scores_bcr_17_week_26, c_scores_bcr_18_week_26, c_scores_bcr_19_week_26, c_scores_bcr_20_week_26, c_scores_bcr_21_week_26, c_scores_bcr_22_week_26,
+                                  c_scores_bcr_23_week_26, c_scores_bcr_24_week_26, c_scores_bcr_25_week_26, c_scores_bcr_26_week_26, c_scores_bcr_27_week_26, c_scores_bcr_28_week_26,
+                                  c_scores_bcr_29_week_26, c_scores_bcr_30_week_26, c_scores_bcr_31_week_26, c_scores_bcr_32_week_26, c_scores_bcr_33_week_26, c_scores_bcr_34_week_26,
+                                  c_scores_bcr_35_week_26, c_scores_bcr_36_week_26, c_scores_bcr_37_week_26)
+
+#generate cleaned phylogenetic trees and community matrices for each BCR
+for(i in 5:37){
+  assign(paste0("passerine.picCleanTree.bcr", i, "week26"), match.phylo.comm(phy = passerine.tree,
+                                                                             comm = as.data.frame(bcr_week_26_list[i-4]))$phy)
+  assign(paste0("passerine.picCleanComm.bcr", i, "week26"), match.phylo.comm(phy = passerine.tree,
+                                                                             comm = as.data.frame(bcr_week_26_list[i-4]))$comm)
+}
+
+#make a list of cleaned trees
+passerine.picCleanTree.bcrweek_26_list <- list(passerine.picCleanTree.bcr5week26, passerine.picCleanTree.bcr6week26, passerine.picCleanTree.bcr7week26, passerine.picCleanTree.bcr8week26, passerine.picCleanTree.bcr9week26, passerine.picCleanTree.bcr10week26,
+                                               passerine.picCleanTree.bcr11week26, passerine.picCleanTree.bcr12week26, passerine.picCleanTree.bcr13week26, passerine.picCleanTree.bcr14week26, passerine.picCleanTree.bcr15week26, passerine.picCleanTree.bcr16week26,
+                                               passerine.picCleanTree.bcr17week26, passerine.picCleanTree.bcr18week26, passerine.picCleanTree.bcr19week26, passerine.picCleanTree.bcr20week26, passerine.picCleanTree.bcr21week26, passerine.picCleanTree.bcr22week26,
+                                               passerine.picCleanTree.bcr23week26, passerine.picCleanTree.bcr24week26, passerine.picCleanTree.bcr25week26, passerine.picCleanTree.bcr26week26, passerine.picCleanTree.bcr27week26, passerine.picCleanTree.bcr28week26,
+                                               passerine.picCleanTree.bcr29week26, passerine.picCleanTree.bcr30week26, passerine.picCleanTree.bcr31week26, passerine.picCleanTree.bcr32week26, passerine.picCleanTree.bcr33week26, passerine.picCleanTree.bcr34week26,
+                                               passerine.picCleanTree.bcr35week26, passerine.picCleanTree.bcr36week26, passerine.picCleanTree.bcr37week26)
+
+# create phylogenetic distance matrices and make a list of those matrices
+for(i in 5:37){
+  assign(paste0("passerine.cophenDist.bcr", i, "week26"), cophenetic.phylo(passerine.picCleanTree.bcrweek_26_list[[i-4]]))
+}
+passerine.cophenDist.week26_list <- list(passerine.cophenDist.bcr5week26, passerine.cophenDist.bcr6week26, passerine.cophenDist.bcr7week26, passerine.cophenDist.bcr8week26, passerine.cophenDist.bcr9week26, passerine.cophenDist.bcr10week26,
+                                         passerine.cophenDist.bcr11week26, passerine.cophenDist.bcr12week26, passerine.cophenDist.bcr13week26, passerine.cophenDist.bcr14week26, passerine.cophenDist.bcr15week26, passerine.cophenDist.bcr16week26,
+                                         passerine.cophenDist.bcr17week26, passerine.cophenDist.bcr18week26, passerine.cophenDist.bcr19week26, passerine.cophenDist.bcr20week26, passerine.cophenDist.bcr21week26, passerine.cophenDist.bcr22week26,
+                                         passerine.cophenDist.bcr23week26, passerine.cophenDist.bcr24week26, passerine.cophenDist.bcr25week26, passerine.cophenDist.bcr26week26, passerine.cophenDist.bcr27week26, passerine.cophenDist.bcr28week26,
+                                         passerine.cophenDist.bcr29week26, passerine.cophenDist.bcr30week26, passerine.cophenDist.bcr31week26, passerine.cophenDist.bcr32week26, passerine.cophenDist.bcr33week26, passerine.cophenDist.bcr34week26,
+                                         passerine.cophenDist.bcr35week26, passerine.cophenDist.bcr36week26, passerine.cophenDist.bcr37week26)
+
+#populate phylogenetic distances for each combination of species in each BCR
+for(i in 5:37){
+  c_scores_bcr_week_26_list[[i-4]]$phylogenetic_distance <- rep(NA, nrow(c_scores_bcr_week_26_list[[i-4]]))
+  for(j in 1:nrow(c_scores_bcr_week_26_list[[i-4]])){
+    c_scores_bcr_week_26_list[[i-4]][j, "phylogenetic_distance"] <- passerine.cophenDist.week26_list[[i-4]][c_scores_bcr_week_26_list[[i-4]][j,"Sp1"],
+                                                                                                            c_scores_bcr_week_26_list[[i-4]][j,"Sp2"]]
+  }
+}
+
+#make a vector of mean NRI value within each BCR
+week_26_mean_NRI_values <- rep(NA, length(c_scores_bcr_week_26_list))
+for(i in 1:length(c_scores_bcr_week_26_list)){
+  week_26_mean_NRI_values[i] <- mean(c_scores_bcr_week_26_list[[i]]$phylogenetic_distance)
+}
+
+#calculate nearest neighbors for each matrix
+#generate species lists for each BCR in week 26
+for(i in 5:37){
+  assign(paste0("bcr", i, "week26_species"), colnames(bcr_week_26_list[[i-4]]))
+}
+
+#generate list of species lists
+week26_species_lists <- list(bcr5week26_species, bcr6week26_species, bcr7week26_species, bcr8week26_species, bcr9week26_species, bcr10week26_species,
+                             bcr11week26_species, bcr12week26_species, bcr13week26_species, bcr14week26_species, bcr15week26_species, bcr16week26_species,
+                             bcr17week26_species, bcr18week26_species, bcr19week26_species, bcr20week26_species, bcr21week26_species, bcr22week26_species,
+                             bcr23week26_species, bcr24week26_species, bcr25week26_species, bcr26week26_species, bcr27week26_species, bcr28week26_species,
+                             bcr29week26_species, bcr30week26_species, bcr31week26_species, bcr32week26_species, bcr33week26_species, bcr34week26_species,
+                             bcr35week26_species, bcr36week26_species, bcr37week26_species)
+
+#generate phylogenetic distance matrices
+for(i in 5:37){
+  assign(paste0("bcr", i, "week26_min_phy_distances"), rep(NA, length(week26_species_lists[[i-4]])))
+}
+
+#generate list of phylogenetic distance matrices
+week26_min_phy_distances_lists <- list(bcr5week26_min_phy_distances, bcr6week26_min_phy_distances, bcr7week26_min_phy_distances, bcr8week26_min_phy_distances, bcr9week26_min_phy_distances, bcr10week26_min_phy_distances,
+                                       bcr11week26_min_phy_distances, bcr12week26_min_phy_distances, bcr13week26_min_phy_distances, bcr14week26_min_phy_distances, bcr15week26_min_phy_distances, bcr16week26_min_phy_distances,
+                                       bcr17week26_min_phy_distances, bcr18week26_min_phy_distances, bcr19week26_min_phy_distances, bcr20week26_min_phy_distances, bcr21week26_min_phy_distances, bcr22week26_min_phy_distances,
+                                       bcr23week26_min_phy_distances, bcr24week26_min_phy_distances, bcr25week26_min_phy_distances, bcr26week26_min_phy_distances, bcr27week26_min_phy_distances, bcr28week26_min_phy_distances,
+                                       bcr29week26_min_phy_distances, bcr30week26_min_phy_distances, bcr31week26_min_phy_distances, bcr32week26_min_phy_distances, bcr33week26_min_phy_distances, bcr34week26_min_phy_distances,
+                                       bcr35week26_min_phy_distances, bcr36week26_min_phy_distances, bcr37week26_min_phy_distances)
+
+#populate matrices of minimum phylogenetic distances
+for(i in 5:37){
+  for(j in 1:length(week26_min_phy_distances_lists[[i-4]])){
+    week26_min_phy_distances_lists[[i-4]][j] <- min(c_scores_bcr_week_26_list[[i-4]][c_scores_bcr_week_26_list[[i-4]]$Sp1 == week26_species_lists[[i-4]][j] |
+                                                                                       c_scores_bcr_week_26_list[[i-4]]$Sp2 == week26_species_lists[[i-4]][j],
+                                                                                     "phylogenetic_distance"])
+  }
+}
+
+#generate a vector of mean NTI value within each BCR
+week_26_mean_NTI_values <- rep(NA, length(c_scores_bcr_week_26_list))
+for(i in 1:length(c_scores_bcr_week_26_list)){
+  week_26_mean_NTI_values[i] <- mean(week26_min_phy_distances_lists[[i]])
+}
+
+### replicate process for winter data
+
+#create list of all week 1 community matrices
+bcr_week_1_list <- list(bcr_5_week_1, bcr_6_week_1, bcr_7_week_1, bcr_8_week_1, bcr_9_week_1, bcr_10_week_1,
+                        bcr_11_week_1, bcr_12_week_1, bcr_13_week_1, bcr_14_week_1, bcr_15_week_1, bcr_16_week_1,
+                        bcr_17_week_1, bcr_18_week_1, bcr_19_week_1, bcr_20_week_1, bcr_21_week_1, bcr_22_week_1,
+                        bcr_23_week_1, bcr_24_week_1, bcr_25_week_1, bcr_26_week_1, bcr_27_week_1, bcr_28_week_1,
+                        bcr_29_week_1, bcr_30_week_1, bcr_31_week_1, bcr_32_week_1, bcr_33_week_1, bcr_34_week_1,
+                        bcr_35_week_1, bcr_36_week_1, bcr_37_week_1)
+
+#generate c scores for all species combinations (denotes whether species combinations are found in sympatry more or less often than random chance)
+for(i in 5:37){
+  df <- as.data.frame(bcr_week_1_list[i-4])
+  df <- df[sample(nrow(df), nrow(df)/100, replace=FALSE),]
+  ecospot <- ecospat.Cscore(df, 2, outpath="output/tables")
+  assign(paste0("c_scores_bcr_", i, "_week_1"), read.delim("output/tables/Cscores.txt"))
+}
+
+#create list of all c score matrices
+c_scores_bcr_week_1_list <- list(c_scores_bcr_5_week_1, c_scores_bcr_6_week_1, c_scores_bcr_7_week_1, c_scores_bcr_8_week_1, c_scores_bcr_9_week_1, c_scores_bcr_10_week_1,
+                                 c_scores_bcr_11_week_1, c_scores_bcr_12_week_1, c_scores_bcr_13_week_1, c_scores_bcr_14_week_1, c_scores_bcr_15_week_1, c_scores_bcr_16_week_1,
+                                 c_scores_bcr_17_week_1, c_scores_bcr_18_week_1, c_scores_bcr_19_week_1, c_scores_bcr_20_week_1, c_scores_bcr_21_week_1, c_scores_bcr_22_week_1,
+                                 c_scores_bcr_23_week_1, c_scores_bcr_24_week_1, c_scores_bcr_25_week_1, c_scores_bcr_26_week_1, c_scores_bcr_27_week_1, c_scores_bcr_28_week_1,
+                                 c_scores_bcr_29_week_1, c_scores_bcr_30_week_1, c_scores_bcr_31_week_1, c_scores_bcr_32_week_1, c_scores_bcr_33_week_1, c_scores_bcr_34_week_1,
+                                 c_scores_bcr_35_week_1, c_scores_bcr_36_week_1, c_scores_bcr_37_week_1)
+
+#generate cleaned phylogenetic trees and community matrices for each BCR
+for(i in 5:37){
+  assign(paste0("passerine.picCleanTree.bcr", i, "week1"), match.phylo.comm(phy = passerine.tree,
+                                                                            comm = as.data.frame(bcr_week_1_list[i-4]))$phy)
+  assign(paste0("passerine.picCleanComm.bcr", i, "week1"), match.phylo.comm(phy = passerine.tree,
+                                                                            comm = as.data.frame(bcr_week_1_list[i-4]))$comm)
+}
+
+#make a list of cleaned trees
+passerine.picCleanTree.bcrweek_1_list <- list(passerine.picCleanTree.bcr5week1, passerine.picCleanTree.bcr6week1, passerine.picCleanTree.bcr7week1, passerine.picCleanTree.bcr8week1, passerine.picCleanTree.bcr9week1, passerine.picCleanTree.bcr10week1,
+                                              passerine.picCleanTree.bcr11week1, passerine.picCleanTree.bcr12week1, passerine.picCleanTree.bcr13week1, passerine.picCleanTree.bcr14week1, passerine.picCleanTree.bcr15week1, passerine.picCleanTree.bcr16week1,
+                                              passerine.picCleanTree.bcr17week1, passerine.picCleanTree.bcr18week1, passerine.picCleanTree.bcr19week1, passerine.picCleanTree.bcr20week1, passerine.picCleanTree.bcr21week1, passerine.picCleanTree.bcr22week1,
+                                              passerine.picCleanTree.bcr23week1, passerine.picCleanTree.bcr24week1, passerine.picCleanTree.bcr25week1, passerine.picCleanTree.bcr26week1, passerine.picCleanTree.bcr27week1, passerine.picCleanTree.bcr28week1,
+                                              passerine.picCleanTree.bcr29week1, passerine.picCleanTree.bcr30week1, passerine.picCleanTree.bcr31week1, passerine.picCleanTree.bcr32week1, passerine.picCleanTree.bcr33week1, passerine.picCleanTree.bcr34week1,
+                                              passerine.picCleanTree.bcr35week1, passerine.picCleanTree.bcr36week1, passerine.picCleanTree.bcr37week1)
+
+# create phylogenetic distance matrices and make a list of those matrices
+for(i in 5:37){
+  assign(paste0("passerine.cophenDist.bcr", i, "week1"), cophenetic.phylo(passerine.picCleanTree.bcrweek_1_list[[i-4]]))
+}
+
+#make a list of cleaned trees
+passerine.cophenDist.week1_list <- list(passerine.cophenDist.bcr5week1, passerine.cophenDist.bcr6week1, passerine.cophenDist.bcr7week1, passerine.cophenDist.bcr8week1, passerine.cophenDist.bcr9week1, passerine.cophenDist.bcr10week1,
+                                        passerine.cophenDist.bcr11week1, passerine.cophenDist.bcr12week1, passerine.cophenDist.bcr13week1, passerine.cophenDist.bcr14week1, passerine.cophenDist.bcr15week1, passerine.cophenDist.bcr16week1,
+                                        passerine.cophenDist.bcr17week1, passerine.cophenDist.bcr18week1, passerine.cophenDist.bcr19week1, passerine.cophenDist.bcr20week1, passerine.cophenDist.bcr21week1, passerine.cophenDist.bcr22week1,
+                                        passerine.cophenDist.bcr23week1, passerine.cophenDist.bcr24week1, passerine.cophenDist.bcr25week1, passerine.cophenDist.bcr26week1, passerine.cophenDist.bcr27week1, passerine.cophenDist.bcr28week1,
+                                        passerine.cophenDist.bcr29week1, passerine.cophenDist.bcr30week1, passerine.cophenDist.bcr31week1, passerine.cophenDist.bcr32week1, passerine.cophenDist.bcr33week1, passerine.cophenDist.bcr34week1,
+                                        passerine.cophenDist.bcr35week1, passerine.cophenDist.bcr36week1, passerine.cophenDist.bcr37week1)
+
+#populate phylogenetic distances for each combination of species in each BCR
+for(i in 5:37){
+  c_scores_bcr_week_1_list[[i-4]]$phylogenetic_distance <- rep(NA, nrow(c_scores_bcr_week_1_list[[i-4]]))
+  for(j in 1:nrow(c_scores_bcr_week_1_list[[i-4]])){
+    c_scores_bcr_week_1_list[[i-4]][j, "phylogenetic_distance"] <- passerine.cophenDist.week1_list[[i-4]][c_scores_bcr_week_1_list[[i-4]][j,"Sp1"],
+                                                                                                          c_scores_bcr_week_1_list[[i-4]][j,"Sp2"]]
+  }
+}
+
+#make a vector of mean NRI value within each BCR
+week_1_mean_NRI_values <- rep(NA, length(c_scores_bcr_week_1_list))
+for(i in 1:length(c_scores_bcr_week_1_list)){
+  week_1_mean_NRI_values[i] <- mean(c_scores_bcr_week_1_list[[i]]$phylogenetic_distance)
+}
+
+#calculate nearest neighbors for each matrix
+#generate species lists for each BCR in week 1
+for(i in 5:37){
+  assign(paste0("bcr", i, "week1_species"), colnames(bcr_week_1_list[[i-4]]))
+}
+
+#generate list of species lists
+week1_species_lists <- list(bcr5week1_species, bcr6week1_species, bcr7week1_species, bcr8week1_species, bcr9week1_species, bcr10week1_species,
+                            bcr11week1_species, bcr12week1_species, bcr13week1_species, bcr14week1_species, bcr15week1_species, bcr16week1_species,
+                            bcr17week1_species, bcr18week1_species, bcr19week1_species, bcr20week1_species, bcr21week1_species, bcr22week1_species,
+                            bcr23week1_species, bcr24week1_species, bcr25week1_species, bcr26week1_species, bcr27week1_species, bcr28week1_species,
+                            bcr29week1_species, bcr30week1_species, bcr31week1_species, bcr32week1_species, bcr33week1_species, bcr34week1_species,
+                            bcr35week1_species, bcr36week1_species, bcr37week1_species)
+
+#generate phylogenetic distance matrices
+for(i in 5:37){
+  assign(paste0("bcr", i, "week1_min_phy_distances"), rep(NA, length(week1_species_lists[[i-4]])))
+}
+
+#generate list of phylogenetic distance matrices
+week1_min_phy_distances_lists <- list(bcr5week1_min_phy_distances, bcr6week1_min_phy_distances, bcr7week1_min_phy_distances, bcr8week1_min_phy_distances, bcr9week1_min_phy_distances, bcr10week1_min_phy_distances,
+                                      bcr11week1_min_phy_distances, bcr12week1_min_phy_distances, bcr13week1_min_phy_distances, bcr14week1_min_phy_distances, bcr15week1_min_phy_distances, bcr16week1_min_phy_distances,
+                                      bcr17week1_min_phy_distances, bcr18week1_min_phy_distances, bcr19week1_min_phy_distances, bcr20week1_min_phy_distances, bcr21week1_min_phy_distances, bcr22week1_min_phy_distances,
+                                      bcr23week1_min_phy_distances, bcr24week1_min_phy_distances, bcr25week1_min_phy_distances, bcr26week1_min_phy_distances, bcr27week1_min_phy_distances, bcr28week1_min_phy_distances,
+                                      bcr29week1_min_phy_distances, bcr30week1_min_phy_distances, bcr31week1_min_phy_distances, bcr32week1_min_phy_distances, bcr33week1_min_phy_distances, bcr34week1_min_phy_distances,
+                                      bcr35week1_min_phy_distances, bcr36week1_min_phy_distances, bcr37week1_min_phy_distances)
+
+#populate matrices of minimum phylogenetic distances
+for(i in 5:37){
+  for(j in 1:length(week1_min_phy_distances_lists[[i-4]])){
+    week1_min_phy_distances_lists[[i-4]][j] <- min(c_scores_bcr_week_1_list[[i-4]][c_scores_bcr_week_1_list[[i-4]]$Sp1 == week1_species_lists[[i-4]][j] |
+                                                                                     c_scores_bcr_week_1_list[[i-4]]$Sp2 == week1_species_lists[[i-4]][j],
+                                                                                   "phylogenetic_distance"])
+  }
+}
+
+#generate a vector of mean NTI value within each BCR
+week_1_mean_NTI_values <- rep(NA, length(c_scores_bcr_week_1_list))
+for(i in 1:length(c_scores_bcr_week_1_list)){
+  week_1_mean_NTI_values[i] <- mean(week1_min_phy_distances_lists[[i]])
+}
+
+### create density plots for distributions of mean NRI and mean NTI for weeks 1 and 26 (SF1)
+#process data for week 26
+#generate data frame for plotting mean NRI and mean NTI data for week 26
+mean_NRI_NTI_hist_26 <- data.frame(matrix(NA, nrow = 2*length(week_26_mean_NRI_values), ncol = 2))
+colnames(mean_NRI_NTI_hist_26) <- c("value", "type")
+#populate mean NRI values
+mean_NRI_NTI_hist_26[c(1:length(week_26_mean_NRI_values)), "value"] <- week_26_mean_NRI_values
+#populate mean NTI values
+mean_NRI_NTI_hist_26[c((length(week_26_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_26)), "value"] <- week_26_mean_NTI_values
+#add labels
+mean_NRI_NTI_hist_26[c(1:length(week_26_mean_NRI_values)), "type"] <- "NRI"
+mean_NRI_NTI_hist_26[c((length(week_26_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_26)), "type"] <- "NTI"
+
+#create gg object depicting week 26 mean NRI and NTI distributions 
+week26density <- ggplot(mean_NRI_NTI_hist_26, aes(x=value, group=type, fill=type)) +
+  geom_density(alpha=0.67) +
+  xlab("Phylogenetic Distance") +
+  ylab("Density") +
+  xlim(0,100) +
+  guides(fill=guide_legend(title="Metric")) +
+  ggtitle("Week 26") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(values=c("red","blue")) +
+  theme(legend.position = "bottom", text = element_text(size = 25))
+
+#process data for week 1
+#generate data frame for plotting mean NRI and mean NTI data for week 1
+mean_NRI_NTI_hist_1 <- data.frame(matrix(NA, nrow = 2*length(week_1_mean_NRI_values), ncol = 2))
+colnames(mean_NRI_NTI_hist_1) <- c("value", "type")
+#populate mean NRI values
+mean_NRI_NTI_hist_1[c(1:length(week_1_mean_NRI_values)), "value"] <- week_1_mean_NRI_values
+#populate mean NTI values
+mean_NRI_NTI_hist_1[c((length(week_1_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_1)), "value"] <- week_1_mean_NTI_values
+#add labels
+mean_NRI_NTI_hist_1[c(1:length(week_1_mean_NRI_values)), "type"] <- "NRI"
+mean_NRI_NTI_hist_1[c((length(week_1_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_1)), "type"] <- "NTI"
+
+#create gg object depicting week 1 mean NRI and NTI distributions 
+week1density <- ggplot(mean_NRI_NTI_hist_1, aes(x=value, group=type, fill=type)) +
+  geom_density(alpha=0.67) +
+  xlab("Phylogenetic Distance") +
+  ylab("Density") +
+  xlim(0,100) +
+  guides(fill=guide_legend(title="Metric")) +
+  ggtitle("Week 1") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(values=c("red","blue")) +
+  theme(legend.position = "bottom", text = element_text(size = 25))
+
+#merge dataframes for the two weeks and label
+both_weeks_density <- dplyr::bind_rows(mean_NRI_NTI_hist_26, mean_NRI_NTI_hist_1, .id = "week")
+both_weeks_density[both_weeks_density$week == "2","week"] <- "Week 1"
+both_weeks_density[both_weeks_density$week == "1","week"] <- "Week 26"
+
+#arrange two weeks' density plots into one plot
+ggarrange(week1density, week26density, ncol = 2, nrow = 1, common.legend = TRUE, legend="bottom")
+
+#generate Supplemental Figure 1
+pdf(file = 'output/figures/mean_NRI_NTI_values_density.pdf')
+ggplot(both_weeks_density, aes(x=value, group=type, fill=type)) +
+  geom_density(alpha=0.67) +
+  xlab("Phylogenetic Distance") +
+  ylab("Density") +
+  xlim(0,100) +
+  guides(fill=guide_legend(title="Metric")) +
+  ggtitle("Mean NRI vs. NTI Phylogenetic Distances") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~week) +
+  scale_fill_manual(values=c("red","blue")) +
+  theme(legend.position = "bottom", text = element_text(size = 25))
+dev.off()
+
 #read in csvs of NRIs and NTIs redos
 
 ## add migratory proportion to data frames
@@ -178,318 +482,6 @@ combined_week_26_nri$longitude <- sf_project(from = crs, to = st_crs(4326), comb
 combined_week_26_NTI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,2]
 combined_week_26_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,1]
 
-#### redo c-score analyses
-##### create a histogram with distributions of phylogenetic distance means across all BCRs
-for(i in 5:37){
-  assign(paste0("bcr_", i, "_week_26"), read.csv(paste0("output/bcr_community_data/26/community_26_bcr_", i, ".csv")))
-} #takes about a half hour
-
-for(i in 5:37){
-  assign(paste0("bcr_", i, "_week_1"), read.csv(paste0("output/bcr_community_data/1/community_1_bcr_", i, ".csv")))
-} #takes about a half hour
-
-bcr_week_26_list <- list(bcr_5_week_26, bcr_6_week_26, bcr_7_week_26, bcr_8_week_26, bcr_9_week_26, bcr_10_week_26,
-                         bcr_11_week_26, bcr_12_week_26, bcr_13_week_26, bcr_14_week_26, bcr_15_week_26, bcr_16_week_26,
-                         bcr_17_week_26, bcr_18_week_26, bcr_19_week_26, bcr_20_week_26, bcr_21_week_26, bcr_22_week_26,
-                         bcr_23_week_26, bcr_24_week_26, bcr_25_week_26, bcr_26_week_26, bcr_27_week_26, bcr_28_week_26,
-                         bcr_29_week_26, bcr_30_week_26, bcr_31_week_26, bcr_32_week_26, bcr_33_week_26, bcr_34_week_26,
-                         bcr_35_week_26, bcr_36_week_26, bcr_37_week_26)
-
-#generate c scores for everyone at low frequencies so that we can generate phy distances
-for(i in 5:37){
-  df <- as.data.frame(bcr_week_26_list[i-4])
-  df <- df[sample(nrow(df), nrow(df)/100, replace=FALSE),]
-  ecospot <- ecospat.Cscore(df, 2, outpath="output/tables")
-  assign(paste0("c_scores_bcr_", i, "_week_26"), read.delim("output/tables/Cscores.txt"))
-}
-
-#make a list of the c score matrices
-c_scores_bcr_week_26_list <- list(c_scores_bcr_5_week_26, c_scores_bcr_6_week_26, c_scores_bcr_7_week_26, c_scores_bcr_8_week_26, c_scores_bcr_9_week_26, c_scores_bcr_10_week_26,
-                                  c_scores_bcr_11_week_26, c_scores_bcr_12_week_26, c_scores_bcr_13_week_26, c_scores_bcr_14_week_26, c_scores_bcr_15_week_26, c_scores_bcr_16_week_26,
-                                  c_scores_bcr_17_week_26, c_scores_bcr_18_week_26, c_scores_bcr_19_week_26, c_scores_bcr_20_week_26, c_scores_bcr_21_week_26, c_scores_bcr_22_week_26,
-                                  c_scores_bcr_23_week_26, c_scores_bcr_24_week_26, c_scores_bcr_25_week_26, c_scores_bcr_26_week_26, c_scores_bcr_27_week_26, c_scores_bcr_28_week_26,
-                                  c_scores_bcr_29_week_26, c_scores_bcr_30_week_26, c_scores_bcr_31_week_26, c_scores_bcr_32_week_26, c_scores_bcr_33_week_26, c_scores_bcr_34_week_26,
-                                  c_scores_bcr_35_week_26, c_scores_bcr_36_week_26, c_scores_bcr_37_week_26)
-
-#match phylogenies for each area
-
-# Create a Phylogenetic Distance Matrix
-
-#generate phylogeny matches
-for(i in 5:37){
-  assign(paste0("passerine.picCleanTree.bcr", i, "week26"), match.phylo.comm(phy = passerine.tree,
-                                                                             comm = as.data.frame(bcr_week_26_list[i-4]))$phy)
-  assign(paste0("passerine.picCleanComm.bcr", i, "week26"), match.phylo.comm(phy = passerine.tree,
-                                                                             comm = as.data.frame(bcr_week_26_list[i-4]))$comm)
-}
-
-#make a list of those matches
-passerine.picCleanTree.bcrweek_26_list <- list(passerine.picCleanTree.bcr5week26, passerine.picCleanTree.bcr6week26, passerine.picCleanTree.bcr7week26, passerine.picCleanTree.bcr8week26, passerine.picCleanTree.bcr9week26, passerine.picCleanTree.bcr10week26,
-                                               passerine.picCleanTree.bcr11week26, passerine.picCleanTree.bcr12week26, passerine.picCleanTree.bcr13week26, passerine.picCleanTree.bcr14week26, passerine.picCleanTree.bcr15week26, passerine.picCleanTree.bcr16week26,
-                                               passerine.picCleanTree.bcr17week26, passerine.picCleanTree.bcr18week26, passerine.picCleanTree.bcr19week26, passerine.picCleanTree.bcr20week26, passerine.picCleanTree.bcr21week26, passerine.picCleanTree.bcr22week26,
-                                               passerine.picCleanTree.bcr23week26, passerine.picCleanTree.bcr24week26, passerine.picCleanTree.bcr25week26, passerine.picCleanTree.bcr26week26, passerine.picCleanTree.bcr27week26, passerine.picCleanTree.bcr28week26,
-                                               passerine.picCleanTree.bcr29week26, passerine.picCleanTree.bcr30week26, passerine.picCleanTree.bcr31week26, passerine.picCleanTree.bcr32week26, passerine.picCleanTree.bcr33week26, passerine.picCleanTree.bcr34week26,
-                                               passerine.picCleanTree.bcr35week26, passerine.picCleanTree.bcr36week26, passerine.picCleanTree.bcr37week26)
-
-# create phylogenetic distance matrices and make a list of those matrices
-for(i in 5:37){
-  assign(paste0("passerine.cophenDist.bcr", i, "week26"), cophenetic.phylo(passerine.picCleanTree.bcrweek_26_list[[i-4]]))
-}
-
-passerine.cophenDist.week26_list <- list(passerine.cophenDist.bcr5week26, passerine.cophenDist.bcr6week26, passerine.cophenDist.bcr7week26, passerine.cophenDist.bcr8week26, passerine.cophenDist.bcr9week26, passerine.cophenDist.bcr10week26,
-                                         passerine.cophenDist.bcr11week26, passerine.cophenDist.bcr12week26, passerine.cophenDist.bcr13week26, passerine.cophenDist.bcr14week26, passerine.cophenDist.bcr15week26, passerine.cophenDist.bcr16week26,
-                                         passerine.cophenDist.bcr17week26, passerine.cophenDist.bcr18week26, passerine.cophenDist.bcr19week26, passerine.cophenDist.bcr20week26, passerine.cophenDist.bcr21week26, passerine.cophenDist.bcr22week26,
-                                         passerine.cophenDist.bcr23week26, passerine.cophenDist.bcr24week26, passerine.cophenDist.bcr25week26, passerine.cophenDist.bcr26week26, passerine.cophenDist.bcr27week26, passerine.cophenDist.bcr28week26,
-                                         passerine.cophenDist.bcr29week26, passerine.cophenDist.bcr30week26, passerine.cophenDist.bcr31week26, passerine.cophenDist.bcr32week26, passerine.cophenDist.bcr33week26, passerine.cophenDist.bcr34week26,
-                                         passerine.cophenDist.bcr35week26, passerine.cophenDist.bcr36week26, passerine.cophenDist.bcr37week26)
-
-#add phylogenetic distances to each of the c score matrices
-for(i in 5:37){
-  c_scores_bcr_week_26_list[[i-4]]$phylogenetic_distance <- rep(NA, nrow(c_scores_bcr_week_26_list[[i-4]]))
-  for(j in 1:nrow(c_scores_bcr_week_26_list[[i-4]])){
-    c_scores_bcr_week_26_list[[i-4]][j, "phylogenetic_distance"] <- passerine.cophenDist.week26_list[[i-4]][c_scores_bcr_week_26_list[[i-4]][j,"Sp1"],
-                                                                                                            c_scores_bcr_week_26_list[[i-4]][j,"Sp2"]]
-  }
-}
-
-#make a vector of mean NRI value within each BCR
-week_26_mean_NRI_values <- rep(NA, length(c_scores_bcr_week_26_list))
-for(i in 1:length(c_scores_bcr_week_26_list)){
-  week_26_mean_NRI_values[i] <- mean(c_scores_bcr_week_26_list[[i]]$phylogenetic_distance)
-}
-
-#calculate nearest neighbors for each matrix
-#generate species lists
-for(i in 5:37){
-  assign(paste0("bcr", i, "week26_species"), colnames(bcr_week_26_list[[i-4]]))
-}
-
-#generate list of species lists
-week26_species_lists <- list(bcr5week26_species, bcr6week26_species, bcr7week26_species, bcr8week26_species, bcr9week26_species, bcr10week26_species,
-                             bcr11week26_species, bcr12week26_species, bcr13week26_species, bcr14week26_species, bcr15week26_species, bcr16week26_species,
-                             bcr17week26_species, bcr18week26_species, bcr19week26_species, bcr20week26_species, bcr21week26_species, bcr22week26_species,
-                             bcr23week26_species, bcr24week26_species, bcr25week26_species, bcr26week26_species, bcr27week26_species, bcr28week26_species,
-                             bcr29week26_species, bcr30week26_species, bcr31week26_species, bcr32week26_species, bcr33week26_species, bcr34week26_species,
-                             bcr35week26_species, bcr36week26_species, bcr37week26_species)
-
-#generate phy_distances matrices
-for(i in 5:37){
-  assign(paste0("bcr", i, "week26_min_phy_distances"), rep(NA, length(week26_species_lists[[i-4]])))
-}
-
-#generate list of phy_distance matrices
-week26_min_phy_distances_lists <- list(bcr5week26_min_phy_distances, bcr6week26_min_phy_distances, bcr7week26_min_phy_distances, bcr8week26_min_phy_distances, bcr9week26_min_phy_distances, bcr10week26_min_phy_distances,
-                                       bcr11week26_min_phy_distances, bcr12week26_min_phy_distances, bcr13week26_min_phy_distances, bcr14week26_min_phy_distances, bcr15week26_min_phy_distances, bcr16week26_min_phy_distances,
-                                       bcr17week26_min_phy_distances, bcr18week26_min_phy_distances, bcr19week26_min_phy_distances, bcr20week26_min_phy_distances, bcr21week26_min_phy_distances, bcr22week26_min_phy_distances,
-                                       bcr23week26_min_phy_distances, bcr24week26_min_phy_distances, bcr25week26_min_phy_distances, bcr26week26_min_phy_distances, bcr27week26_min_phy_distances, bcr28week26_min_phy_distances,
-                                       bcr29week26_min_phy_distances, bcr30week26_min_phy_distances, bcr31week26_min_phy_distances, bcr32week26_min_phy_distances, bcr33week26_min_phy_distances, bcr34week26_min_phy_distances,
-                                       bcr35week26_min_phy_distances, bcr36week26_min_phy_distances, bcr37week26_min_phy_distances)
-
-#populate min phy distance matrices
-for(i in 5:37){
-  for(j in 1:length(week26_min_phy_distances_lists[[i-4]])){
-    week26_min_phy_distances_lists[[i-4]][j] <- min(c_scores_bcr_week_26_list[[i-4]][c_scores_bcr_week_26_list[[i-4]]$Sp1 == week26_species_lists[[i-4]][j] |
-                                                                                       c_scores_bcr_week_26_list[[i-4]]$Sp2 == week26_species_lists[[i-4]][j],
-                                                                                     "phylogenetic_distance"])
-  }
-}
-
-#make a vector of mean NTI value within each BCR
-week_26_mean_NTI_values <- rep(NA, length(c_scores_bcr_week_26_list))
-for(i in 1:length(c_scores_bcr_week_26_list)){
-  week_26_mean_NTI_values[i] <- mean(week26_min_phy_distances_lists[[i]])
-}
-
-#initial histogram of mean NRI and NTI values within each BCR
-hist(week_26_mean_NRI_values, freq=FALSE, col=rgb(0,0,1,1/2),
-     xlim=c(0, max(week_26_mean_NRI_values)), ylim=c(0,.25), main="BCR Mean Phylogenetic Distances for NTI & NRI Week 26",
-     xlab="Phylogenetic Distance", breaks=10)
-hist(week_26_mean_NTI_values, freq=FALSE,
-     breaks=5, col=rgb(1,0,0,1/2), add=TRUE)
-abline(v=mean(week_26_mean_NRI_values), col="blue", lwd=2)
-abline(v=mean(week_26_mean_NTI_values), col="red", lwd=2)
-
-#### replicate process for week 1
-bcr_week_1_list <- list(bcr_5_week_1, bcr_6_week_1, bcr_7_week_1, bcr_8_week_1, bcr_9_week_1, bcr_10_week_1,
-                        bcr_11_week_1, bcr_12_week_1, bcr_13_week_1, bcr_14_week_1, bcr_15_week_1, bcr_16_week_1,
-                        bcr_17_week_1, bcr_18_week_1, bcr_19_week_1, bcr_20_week_1, bcr_21_week_1, bcr_22_week_1,
-                        bcr_23_week_1, bcr_24_week_1, bcr_25_week_1, bcr_26_week_1, bcr_27_week_1, bcr_28_week_1,
-                        bcr_29_week_1, bcr_30_week_1, bcr_31_week_1, bcr_32_week_1, bcr_33_week_1, bcr_34_week_1,
-                        bcr_35_week_1, bcr_36_week_1, bcr_37_week_1)
-
-#generate c scores for everyone at low frequencies so that we can generate phy distances
-for(i in 5:37){
-  df <- as.data.frame(bcr_week_1_list[i-4])
-  df <- df[sample(nrow(df), nrow(df)/100, replace=FALSE),]
-  ecospot <- ecospat.Cscore(df, 2, outpath="output/tables")
-  assign(paste0("c_scores_bcr_", i, "_week_1"), read.delim("output/tables/Cscores.txt"))
-}
-
-#make a list of the c score matrices
-c_scores_bcr_week_1_list <- list(c_scores_bcr_5_week_1, c_scores_bcr_6_week_1, c_scores_bcr_7_week_1, c_scores_bcr_8_week_1, c_scores_bcr_9_week_1, c_scores_bcr_10_week_1,
-                                 c_scores_bcr_11_week_1, c_scores_bcr_12_week_1, c_scores_bcr_13_week_1, c_scores_bcr_14_week_1, c_scores_bcr_15_week_1, c_scores_bcr_16_week_1,
-                                 c_scores_bcr_17_week_1, c_scores_bcr_18_week_1, c_scores_bcr_19_week_1, c_scores_bcr_20_week_1, c_scores_bcr_21_week_1, c_scores_bcr_22_week_1,
-                                 c_scores_bcr_23_week_1, c_scores_bcr_24_week_1, c_scores_bcr_25_week_1, c_scores_bcr_26_week_1, c_scores_bcr_27_week_1, c_scores_bcr_28_week_1,
-                                 c_scores_bcr_29_week_1, c_scores_bcr_30_week_1, c_scores_bcr_31_week_1, c_scores_bcr_32_week_1, c_scores_bcr_33_week_1, c_scores_bcr_34_week_1,
-                                 c_scores_bcr_35_week_1, c_scores_bcr_36_week_1, c_scores_bcr_37_week_1)
-
-#match phylogenies for each area
-
-# Create a Phylogenetic Distance Matrix
-
-#generate phylogeny matches
-for(i in 5:37){
-  assign(paste0("passerine.picCleanTree.bcr", i, "week1"), match.phylo.comm(phy = passerine.tree,
-                                                                            comm = as.data.frame(bcr_week_1_list[i-4]))$phy)
-  assign(paste0("passerine.picCleanComm.bcr", i, "week1"), match.phylo.comm(phy = passerine.tree,
-                                                                            comm = as.data.frame(bcr_week_1_list[i-4]))$comm)
-}
-
-#make a list of those matches
-passerine.picCleanTree.bcrweek_1_list <- list(passerine.picCleanTree.bcr5week1, passerine.picCleanTree.bcr6week1, passerine.picCleanTree.bcr7week1, passerine.picCleanTree.bcr8week1, passerine.picCleanTree.bcr9week1, passerine.picCleanTree.bcr10week1,
-                                              passerine.picCleanTree.bcr11week1, passerine.picCleanTree.bcr12week1, passerine.picCleanTree.bcr13week1, passerine.picCleanTree.bcr14week1, passerine.picCleanTree.bcr15week1, passerine.picCleanTree.bcr16week1,
-                                              passerine.picCleanTree.bcr17week1, passerine.picCleanTree.bcr18week1, passerine.picCleanTree.bcr19week1, passerine.picCleanTree.bcr20week1, passerine.picCleanTree.bcr21week1, passerine.picCleanTree.bcr22week1,
-                                              passerine.picCleanTree.bcr23week1, passerine.picCleanTree.bcr24week1, passerine.picCleanTree.bcr25week1, passerine.picCleanTree.bcr26week1, passerine.picCleanTree.bcr27week1, passerine.picCleanTree.bcr28week1,
-                                              passerine.picCleanTree.bcr29week1, passerine.picCleanTree.bcr30week1, passerine.picCleanTree.bcr31week1, passerine.picCleanTree.bcr32week1, passerine.picCleanTree.bcr33week1, passerine.picCleanTree.bcr34week1,
-                                              passerine.picCleanTree.bcr35week1, passerine.picCleanTree.bcr36week1, passerine.picCleanTree.bcr37week1)
-
-# create phylogenetic distance matrices and make a list of those matrices
-for(i in 5:37){
-  assign(paste0("passerine.cophenDist.bcr", i, "week1"), cophenetic.phylo(passerine.picCleanTree.bcrweek_1_list[[i-4]]))
-}
-
-passerine.cophenDist.week1_list <- list(passerine.cophenDist.bcr5week1, passerine.cophenDist.bcr6week1, passerine.cophenDist.bcr7week1, passerine.cophenDist.bcr8week1, passerine.cophenDist.bcr9week1, passerine.cophenDist.bcr10week1,
-                                        passerine.cophenDist.bcr11week1, passerine.cophenDist.bcr12week1, passerine.cophenDist.bcr13week1, passerine.cophenDist.bcr14week1, passerine.cophenDist.bcr15week1, passerine.cophenDist.bcr16week1,
-                                        passerine.cophenDist.bcr17week1, passerine.cophenDist.bcr18week1, passerine.cophenDist.bcr19week1, passerine.cophenDist.bcr20week1, passerine.cophenDist.bcr21week1, passerine.cophenDist.bcr22week1,
-                                        passerine.cophenDist.bcr23week1, passerine.cophenDist.bcr24week1, passerine.cophenDist.bcr25week1, passerine.cophenDist.bcr26week1, passerine.cophenDist.bcr27week1, passerine.cophenDist.bcr28week1,
-                                        passerine.cophenDist.bcr29week1, passerine.cophenDist.bcr30week1, passerine.cophenDist.bcr31week1, passerine.cophenDist.bcr32week1, passerine.cophenDist.bcr33week1, passerine.cophenDist.bcr34week1,
-                                        passerine.cophenDist.bcr35week1, passerine.cophenDist.bcr36week1, passerine.cophenDist.bcr37week1)
-
-#add phylogenetic distances to each of the c score matrices
-for(i in 5:37){
-  c_scores_bcr_week_1_list[[i-4]]$phylogenetic_distance <- rep(NA, nrow(c_scores_bcr_week_1_list[[i-4]]))
-  for(j in 1:nrow(c_scores_bcr_week_1_list[[i-4]])){
-    c_scores_bcr_week_1_list[[i-4]][j, "phylogenetic_distance"] <- passerine.cophenDist.week1_list[[i-4]][c_scores_bcr_week_1_list[[i-4]][j,"Sp1"],
-                                                                                                          c_scores_bcr_week_1_list[[i-4]][j,"Sp2"]]
-  }
-}
-
-#make a vector of mean NRI value within each BCR
-week_1_mean_NRI_values <- rep(NA, length(c_scores_bcr_week_1_list))
-for(i in 1:length(c_scores_bcr_week_1_list)){
-  week_1_mean_NRI_values[i] <- mean(c_scores_bcr_week_1_list[[i]]$phylogenetic_distance)
-}
-
-#calculate nearest neighbors for each matrix
-#generate species lists
-for(i in 5:37){
-  assign(paste0("bcr", i, "week1_species"), colnames(bcr_week_1_list[[i-4]]))
-}
-
-#generate list of species lists
-week1_species_lists <- list(bcr5week1_species, bcr6week1_species, bcr7week1_species, bcr8week1_species, bcr9week1_species, bcr10week1_species,
-                            bcr11week1_species, bcr12week1_species, bcr13week1_species, bcr14week1_species, bcr15week1_species, bcr16week1_species,
-                            bcr17week1_species, bcr18week1_species, bcr19week1_species, bcr20week1_species, bcr21week1_species, bcr22week1_species,
-                            bcr23week1_species, bcr24week1_species, bcr25week1_species, bcr26week1_species, bcr27week1_species, bcr28week1_species,
-                            bcr29week1_species, bcr30week1_species, bcr31week1_species, bcr32week1_species, bcr33week1_species, bcr34week1_species,
-                            bcr35week1_species, bcr36week1_species, bcr37week1_species)
-
-#generate phy_distances matrices
-for(i in 5:37){
-  assign(paste0("bcr", i, "week1_min_phy_distances"), rep(NA, length(week1_species_lists[[i-4]])))
-}
-
-#generate list of phy_distance matrices
-week1_min_phy_distances_lists <- list(bcr5week1_min_phy_distances, bcr6week1_min_phy_distances, bcr7week1_min_phy_distances, bcr8week1_min_phy_distances, bcr9week1_min_phy_distances, bcr10week1_min_phy_distances,
-                                      bcr11week1_min_phy_distances, bcr12week1_min_phy_distances, bcr13week1_min_phy_distances, bcr14week1_min_phy_distances, bcr15week1_min_phy_distances, bcr16week1_min_phy_distances,
-                                      bcr17week1_min_phy_distances, bcr18week1_min_phy_distances, bcr19week1_min_phy_distances, bcr20week1_min_phy_distances, bcr21week1_min_phy_distances, bcr22week1_min_phy_distances,
-                                      bcr23week1_min_phy_distances, bcr24week1_min_phy_distances, bcr25week1_min_phy_distances, bcr26week1_min_phy_distances, bcr27week1_min_phy_distances, bcr28week1_min_phy_distances,
-                                      bcr29week1_min_phy_distances, bcr30week1_min_phy_distances, bcr31week1_min_phy_distances, bcr32week1_min_phy_distances, bcr33week1_min_phy_distances, bcr34week1_min_phy_distances,
-                                      bcr35week1_min_phy_distances, bcr36week1_min_phy_distances, bcr37week1_min_phy_distances)
-
-#populate min phy distance matrices
-for(i in 5:37){
-  for(j in 1:length(week1_min_phy_distances_lists[[i-4]])){
-    week1_min_phy_distances_lists[[i-4]][j] <- min(c_scores_bcr_week_1_list[[i-4]][c_scores_bcr_week_1_list[[i-4]]$Sp1 == week1_species_lists[[i-4]][j] |
-                                                                                     c_scores_bcr_week_1_list[[i-4]]$Sp2 == week1_species_lists[[i-4]][j],
-                                                                                   "phylogenetic_distance"])
-  }
-}
-
-#make a vector of mean NTI value within each BCR
-week_1_mean_NTI_values <- rep(NA, length(c_scores_bcr_week_1_list))
-for(i in 1:length(c_scores_bcr_week_1_list)){
-  week_1_mean_NTI_values[i] <- mean(week1_min_phy_distances_lists[[i]])
-}
-
-#initial histogram of mean NRI and NTI values within each BCR
-hist(week_1_mean_NRI_values, freq=FALSE, col=rgb(0,0,1,1/2),
-     xlim=c(0, max(week_1_mean_NRI_values)), ylim=c(0,.25), main="BCR Mean Phylogenetic Distances for NTI & NRI Week 1",
-     xlab="Phylogenetic Distance", breaks=10)
-hist(week_1_mean_NTI_values, freq=FALSE,
-     breaks=5, col=rgb(1,0,0,1/2), add=TRUE)
-abline(v=mean(week_1_mean_NRI_values), col="blue", lwd=2)
-abline(v=mean(week_1_mean_NTI_values), col="red", lwd=2)
-
-#### create nicer density plots for manuscript
-#week 26
-mean_NRI_NTI_hist_26 <- data.frame(matrix(NA, nrow = 2*length(week_26_mean_NRI_values), ncol = 2))
-colnames(mean_NRI_NTI_hist_26) <- c("value", "type")
-mean_NRI_NTI_hist_26[c(1:length(week_26_mean_NRI_values)), "value"] <- week_26_mean_NRI_values
-mean_NRI_NTI_hist_26[c((length(week_26_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_26)), "value"] <- week_26_mean_NTI_values
-mean_NRI_NTI_hist_26[c(1:length(week_26_mean_NRI_values)), "type"] <- "NRI"
-mean_NRI_NTI_hist_26[c((length(week_26_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_26)), "type"] <- "NTI"
-mean_NRI_NTI_hist_26
-
-week26density <- ggplot(mean_NRI_NTI_hist_26, aes(x=value, group=type, fill=type)) +
-  geom_density(alpha=0.67) +
-  xlab("Phylogenetic Distance") +
-  ylab("Density") +
-  xlim(0,100) +
-  guides(fill=guide_legend(title="Metric")) +
-  ggtitle("Week 26") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_fill_manual(values=c("red","blue")) +
-  theme(legend.position = "bottom", text = element_text(size = 25))
-
-#week 1
-mean_NRI_NTI_hist_1 <- data.frame(matrix(NA, nrow = 2*length(week_1_mean_NRI_values), ncol = 2))
-colnames(mean_NRI_NTI_hist_1) <- c("value", "type")
-mean_NRI_NTI_hist_1[c(1:length(week_1_mean_NRI_values)), "value"] <- week_1_mean_NRI_values
-mean_NRI_NTI_hist_1[c((length(week_1_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_1)), "value"] <- week_1_mean_NTI_values
-mean_NRI_NTI_hist_1[c(1:length(week_1_mean_NRI_values)), "type"] <- "NRI"
-mean_NRI_NTI_hist_1[c((length(week_1_mean_NRI_values) + 1)):(nrow(mean_NRI_NTI_hist_1)), "type"] <- "NTI"
-mean_NRI_NTI_hist_1
-
-week1density <- ggplot(mean_NRI_NTI_hist_1, aes(x=value, group=type, fill=type)) +
-  geom_density(alpha=0.67) +
-  xlab("Phylogenetic Distance") +
-  ylab("Density") +
-  xlim(0,100) +
-  guides(fill=guide_legend(title="Metric")) +
-  ggtitle("Week 1") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_fill_manual(values=c("red","blue")) +
-  theme(legend.position = "bottom", text = element_text(size = 25))
-
-#merge two dataframes
-both_weeks_density <- dplyr::bind_rows(mean_NRI_NTI_hist_26, mean_NRI_NTI_hist_1, .id = "week")
-both_weeks_density[both_weeks_density$week == "2","week"] <- "Week 1"
-both_weeks_density[both_weeks_density$week == "1","week"] <- "Week 26"
-
-ggarrange(week1density, week26density, ncol = 2, nrow = 1, common.legend = TRUE, legend="bottom")
-
-ggplot(both_weeks_density, aes(x=value, group=type, fill=type)) +
-  geom_density(alpha=0.67) +
-  xlab("Phylogenetic Distance") +
-  ylab("Density") +
-  xlim(0,100) +
-  guides(fill=guide_legend(title="Metric")) +
-  ggtitle("Mean NRI vs. NTI Phylogenetic Distances") +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  facet_wrap(~week) +
-  scale_fill_manual(values=c("red","blue")) +
-  theme(legend.position = "bottom", text = element_text(size = 25))
 
 
 # redo turnover advanced modeling
