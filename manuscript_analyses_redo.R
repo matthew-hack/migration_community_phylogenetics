@@ -446,122 +446,114 @@ ggplot(both_weeks_density, aes(x=value, group=type, fill=type)) +
   theme(legend.position = "bottom", text = element_text(size = 25))
 dev.off()
 
-#read in csvs of NRIs and NTIs redos
+##### PROCESS WEEK 1 AND WEEK 26 DATASETS FOR SEASONAL TURNOVER ANALYSES #####
 
-## add migratory proportion to data frames
-# load migratory proportion
+### GO BACK: change redo names
+#reread in NRI and NTI ecoregional data generated from weeks 1 and weeks 26
+combined_week_26_NRI <- read.csv("output/bcr_tables/26/combined_NRI_26_redo.csv")
+combined_week_26_NTI <- read.csv("output/bcr_tables/26/combined_NTI_26_redo.csv")
+combined_week_1_NRI <- read.csv("output/bcr_tables/1/combined_NRI_1_redo.csv")
+combined_week_1_NTI <- read.csv("output/bcr_tables/1/combined_NTI_1_redo.csv")
+
+#load migratory proportion files for weeks 1 and 26
 migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
 migratory_proportion_df_week_26 <- read.csv("output/community_data/migratory_proportion_week_26.csv")
 
-#add proportion to each dataframe
-combined_week_1_nri$proportion <- rep(NA, nrow(combined_week_1_nri))
+#add migratory proportion field to each dataframe
+combined_week_1_NRI$proportion <- rep(NA, nrow(combined_week_1_NRI))
 combined_week_1_NTI$proportion <- rep(NA, nrow(combined_week_1_NTI))
-combined_week_26_nri$proportion <- rep(NA, nrow(combined_week_26_nri))
+combined_week_26_NRI$proportion <- rep(NA, nrow(combined_week_26_NRI))
 combined_week_26_NTI$proportion <- rep(NA, nrow(combined_week_26_NTI))
 
-#separately because there are a few rows in week 1 that are not in week 26
-
-for(i in 1:nrow(combined_week_1_nri)){
-  combined_week_1_nri[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == combined_week_1_nri[i,"community"],"proportion"]
+#populate proportion fields in each dataframe
+for(i in 1:nrow(combined_week_1_NRI)){
+  combined_week_1_NRI[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == combined_week_1_NRI[i,"community"],"proportion"]
   combined_week_1_NTI[i,"proportion"] <- migratory_proportion_df_week_1[migratory_proportion_df_week_1$community == combined_week_1_NTI[i,"community"],"proportion"]
 }
-
-for(i in 1:nrow(combined_week_26_nri)){
-  combined_week_26_nri[i,"proportion"] <- migratory_proportion_df_week_26[migratory_proportion_df_week_26$community == combined_week_26_nri[i,"community"],"proportion"]
+for(i in 1:nrow(combined_week_26_NRI)){
+  combined_week_26_NRI[i,"proportion"] <- migratory_proportion_df_week_26[migratory_proportion_df_week_26$community == combined_week_26_NRI[i,"community"],"proportion"]
   combined_week_26_NTI[i,"proportion"] <- migratory_proportion_df_week_26[migratory_proportion_df_week_26$community == combined_week_26_NTI[i,"community"],"proportion"]
 }
 
-#### convert x and y values to lat and long
-
-combined_week_1_nri$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_nri[,c("x","y")])[,2]
-combined_week_1_nri$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_nri[,c("x","y")])[,1]
+#convert x and y values to latitude and longitude
+combined_week_1_NRI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_NRI[,c("x","y")])[,2]
+combined_week_1_NRI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_NRI[,c("x","y")])[,1]
 combined_week_1_NTI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_NTI[,c("x","y")])[,2]
 combined_week_1_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_1_NTI[,c("x","y")])[,1]
-combined_week_26_nri$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_nri[,c("x","y")])[,2]
-combined_week_26_nri$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_nri[,c("x","y")])[,1]
+combined_week_26_NRI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NRI[,c("x","y")])[,2]
+combined_week_26_NRI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NRI[,c("x","y")])[,1]
 combined_week_26_NTI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,2]
 combined_week_26_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,1]
 
-
-
-# redo turnover advanced modeling
-
-### if not resolved elsewhere -- prune week 1 into week 26 communities
-combined_week_1_NTI_reduced <- combined_week_1_NTI %>%
-  filter(community %in% combined_week_26_NTI$community)
-combined_week_1_NRI_reduced <- combined_week_1_nri %>%
-  filter(community %in% combined_week_26_nri$community)
-
-
-
-#NTI turnover ratios
-NTI_week_1 <- rep(NA, nrow(combined_week_1_NTI_reduced))
+##### CALCULATE SEASONAL TURNOVER VALUES IN PHYLOGENETIC COMMUNITY METRICS FOR ECOREGIONAL COMMUNITIES #####
+#create data frames for 
+NTI_week_1 <- rep(NA, nrow(combined_week_1_NTI))
 NTI_week_26 <- rep(NA, nrow(combined_week_26_NTI))
 
 NTI_turnover_ratios <- data.frame(NTI_week_1, NTI_week_26)
-NTI_turnover_ratios$NTI_reduced_week_26 <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$richness_week_1 <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$richness_week_26 <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$NTI_turnover <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$richness_turnover <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$BCR <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$mean_latitude <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$latitude <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$longitude <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$mig_prop_week_1 <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$mig_prop_week_26 <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$mig_prop_turnover <- rep(NA, nrow(combined_week_1_NTI_reduced))
-NTI_turnover_ratios$community <- rep(NA, nrow(combined_week_1_NTI_reduced))
+NTI_turnover_ratios$NTI_week_26 <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$richness_week_1 <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$richness_week_26 <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$NTI_turnover <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$richness_turnover <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$BCR <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$mean_latitude <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$latitude <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$longitude <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$mig_prop_week_1 <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$mig_prop_week_26 <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$mig_prop_turnover <- rep(NA, nrow(combined_week_1_NTI))
+NTI_turnover_ratios$community <- rep(NA, nrow(combined_week_1_NTI))
 
-NTI_turnover_ratios$NTI_week_1 <- combined_week_1_NTI_reduced$NTI
+NTI_turnover_ratios$NTI_week_1 <- combined_week_1_NTI$NTI
 NTI_turnover_ratios$NTI_week_26 <- combined_week_26_NTI$NTI
-NTI_turnover_ratios$richness_week_1 <- combined_week_1_NTI_reduced$ntaxa
+NTI_turnover_ratios$richness_week_1 <- combined_week_1_NTI$ntaxa
 NTI_turnover_ratios$richness_week_26 <- combined_week_26_NTI$ntaxa
 NTI_turnover_ratios$NTI_turnover <- NTI_turnover_ratios$NTI_week_26 - NTI_turnover_ratios$NTI_week_1
 NTI_turnover_ratios$richness_turnover <- NTI_turnover_ratios$richness_week_26 - NTI_turnover_ratios$richness_week_1
-NTI_turnover_ratios$BCR <- combined_week_1_NTI_reduced$BCR
-NTI_turnover_ratios$latitude <- combined_week_1_NTI_reduced$latitude
-NTI_turnover_ratios$longitude <- combined_week_1_NTI_reduced$longitude
-NTI_turnover_ratios$mig_prop_week_1 <- combined_week_1_NTI_reduced$proportion
+NTI_turnover_ratios$BCR <- combined_week_1_NTI$BCR
+NTI_turnover_ratios$latitude <- combined_week_1_NTI$latitude
+NTI_turnover_ratios$longitude <- combined_week_1_NTI$longitude
+NTI_turnover_ratios$mig_prop_week_1 <- combined_week_1_NTI$proportion
 NTI_turnover_ratios$mig_prop_week_26 <- combined_week_26_NTI$proportion
 NTI_turnover_ratios$mig_prop_turnover <- NTI_turnover_ratios$mig_prop_week_26 - NTI_turnover_ratios$mig_prop_week_1
-NTI_turnover_ratios$community <- combined_week_1_NTI_reduced$community
+NTI_turnover_ratios$community <- combined_week_1_NTI$community
 
 plot(NTI_turnover_ratios$NTI_turnover ~ NTI_turnover_ratios$richness_turnover)
 
 #redo with NRI
 #NRI turnover ratios
-NRI_week_1 <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_week_26 <- rep(NA, nrow(combined_week_26_nri))
+NRI_week_1 <- rep(NA, nrow(combined_week_1_NRI))
+NRI_week_26 <- rep(NA, nrow(combined_week_26_NRI))
 
 NRI_turnover_ratios <- data.frame(NRI_week_1, NRI_week_26)
-NRI_turnover_ratios$NRI_reduced_week_26 <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$richness_week_1 <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$richness_week_26 <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$NRI_turnover <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$richness_turnover <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$BCR <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$mean_latitude <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$latitude <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$longitude <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$mig_prop_week_1 <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$mig_prop_week_26 <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$mig_prop_turnover <- rep(NA, nrow(combined_week_1_NRI_reduced))
-NRI_turnover_ratios$community <- rep(NA, nrow(combined_week_1_NRI_reduced))
+NRI_turnover_ratios$NRI_week_26 <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$richness_week_1 <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$richness_week_26 <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$NRI_turnover <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$richness_turnover <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$BCR <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$mean_latitude <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$latitude <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$longitude <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$mig_prop_week_1 <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$mig_prop_week_26 <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$mig_prop_turnover <- rep(NA, nrow(combined_week_1_NRI))
+NRI_turnover_ratios$community <- rep(NA, nrow(combined_week_1_NRI))
 
-NRI_turnover_ratios$NRI_week_1 <- combined_week_1_NRI_reduced$NRI
-NRI_turnover_ratios$NRI_week_26 <- combined_week_26_nri$NRI
-NRI_turnover_ratios$richness_week_1 <- combined_week_1_NRI_reduced$ntaxa
-NRI_turnover_ratios$richness_week_26 <- combined_week_26_nri$ntaxa
+NRI_turnover_ratios$NRI_week_1 <- combined_week_1_NRI$NRI
+NRI_turnover_ratios$NRI_week_26 <- combined_week_26_NRI$NRI
+NRI_turnover_ratios$richness_week_1 <- combined_week_1_NRI$ntaxa
+NRI_turnover_ratios$richness_week_26 <- combined_week_26_NRI$ntaxa
 NRI_turnover_ratios$NRI_turnover <- NRI_turnover_ratios$NRI_week_26 - NRI_turnover_ratios$NRI_week_1
 NRI_turnover_ratios$richness_turnover <- NRI_turnover_ratios$richness_week_26 - NRI_turnover_ratios$richness_week_1
-NRI_turnover_ratios$BCR <- combined_week_1_NRI_reduced$BCR
-NRI_turnover_ratios$latitude <- combined_week_1_NRI_reduced$latitude
-NRI_turnover_ratios$longitude <- combined_week_1_NRI_reduced$longitude
-NRI_turnover_ratios$mig_prop_week_1 <- combined_week_1_NRI_reduced$proportion
-NRI_turnover_ratios$mig_prop_week_26 <- combined_week_26_nri$proportion
+NRI_turnover_ratios$BCR <- combined_week_1_NRI$BCR
+NRI_turnover_ratios$latitude <- combined_week_1_NRI$latitude
+NRI_turnover_ratios$longitude <- combined_week_1_NRI$longitude
+NRI_turnover_ratios$mig_prop_week_1 <- combined_week_1_NRI$proportion
+NRI_turnover_ratios$mig_prop_week_26 <- combined_week_26_NRI$proportion
 NRI_turnover_ratios$mig_prop_turnover <- NRI_turnover_ratios$mig_prop_week_26 - NRI_turnover_ratios$mig_prop_week_1
-NRI_turnover_ratios$community <- combined_week_1_NRI_reduced$community
+NRI_turnover_ratios$community <- combined_week_1_NRI$community
 
 plot(NRI_turnover_ratios$NRI_turnover ~ NRI_turnover_ratios$richness_turnover)
 
@@ -610,44 +602,44 @@ ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
 #turnover ratios (have to run the week 26 stuff first)
 
 ### if not resolved elsewhere -- prune week 1 into week 26 communities
-NTI_week_1_continental_reduced <- passerine.ses.mntd.1.continental %>%
+NTI_week_1_continental <- passerine.ses.mntd.1.continental %>%
   filter(community %in% passerine.ses.mntd.26.continental$community)
-NRI_week_1_continental_reduced <- passerine.ses.mpd.1.continental %>%
+NRI_week_1_continental <- passerine.ses.mpd.1.continental %>%
   filter(community %in% passerine.ses.mpd.26.continental$community)
 
 #NTI continental
-NTI_week_1_continental <- rep(NA, nrow(NTI_week_1_continental_reduced))
+NTI_week_1_continental <- rep(NA, nrow(NTI_week_1_continental))
 NTI_week_26_continental <- rep(NA, nrow(passerine.ses.mntd.26.continental))
 
 
 NTI_turnover_ratios_continental <- data.frame(NTI_week_1_continental, NTI_week_26_continental)
-NTI_turnover_ratios_continental$NTI_reduced_week_26 <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$richness_week_1 <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$richness_week_26 <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$NTI_turnover <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$richness_turnover <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$BCR <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$mean_latitude <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$latitude <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$longitude <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$mig_prop_week_1 <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$mig_prop_week_26 <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$mig_prop_turnover <- rep(NA, nrow(NTI_week_1_continental_reduced))
-NTI_turnover_ratios_continental$community <- rep(NA, nrow(NTI_week_1_continental_reduced))
+NTI_turnover_ratios_continental$NTI_week_26 <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$richness_week_1 <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$richness_week_26 <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$NTI_turnover <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$richness_turnover <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$BCR <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$mean_latitude <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$latitude <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$longitude <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$mig_prop_week_1 <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$mig_prop_week_26 <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$mig_prop_turnover <- rep(NA, nrow(NTI_week_1_continental))
+NTI_turnover_ratios_continental$community <- rep(NA, nrow(NTI_week_1_continental))
 
-NTI_turnover_ratios_continental$NTI_week_1_continental <- NTI_week_1_continental_reduced$NTI
+NTI_turnover_ratios_continental$NTI_week_1_continental <- NTI_week_1_continental$NTI
 NTI_turnover_ratios_continental$NTI_week_26_continental <- passerine.ses.mntd.26.continental$NTI
-NTI_turnover_ratios_continental$richness_week_1 <- NTI_week_1_continental_reduced$ntaxa
+NTI_turnover_ratios_continental$richness_week_1 <- NTI_week_1_continental$ntaxa
 NTI_turnover_ratios_continental$richness_week_26 <- passerine.ses.mntd.26.continental$ntaxa
 NTI_turnover_ratios_continental$NTI_turnover <- NTI_turnover_ratios_continental$NTI_week_26_continental - NTI_turnover_ratios_continental$NTI_week_1_continental
 NTI_turnover_ratios_continental$richness_turnover <- NTI_turnover_ratios_continental$richness_week_26 - NTI_turnover_ratios_continental$richness_week_1
-NTI_turnover_ratios_continental$BCR <- NTI_week_1_continental_reduced$BCR
-NTI_turnover_ratios_continental$latitude <- NTI_week_1_continental_reduced$latitude
-NTI_turnover_ratios_continental$longitude <- NTI_week_1_continental_reduced$longitude
-NTI_turnover_ratios_continental$mig_prop_week_1 <- NTI_week_1_continental_reduced$proportion
+NTI_turnover_ratios_continental$BCR <- NTI_week_1_continental$BCR
+NTI_turnover_ratios_continental$latitude <- NTI_week_1_continental$latitude
+NTI_turnover_ratios_continental$longitude <- NTI_week_1_continental$longitude
+NTI_turnover_ratios_continental$mig_prop_week_1 <- NTI_week_1_continental$proportion
 NTI_turnover_ratios_continental$mig_prop_week_26 <- passerine.ses.mntd.26.continental$proportion
 NTI_turnover_ratios_continental$mig_prop_turnover <- NTI_turnover_ratios_continental$mig_prop_week_26 - NTI_turnover_ratios_continental$mig_prop_week_1
-NTI_turnover_ratios_continental$community <- NTI_week_1_continental_reduced$community
+NTI_turnover_ratios_continental$community <- NTI_week_1_continental$community
 
 NTI_turnover_plot <- ggplot(mapping = aes(x = NTI_turnover_ratios_continental$richness_turnover, y = NTI_turnover_ratios_continental$NTI_turnover)) +
   geom_point(aes(color = NTI_turnover_ratios_continental$latitude), size=4) +
@@ -659,38 +651,38 @@ ggMarginal(NTI_turnover_plot, fill = "green")
 
 
 #NRI continental
-NRI_week_1_continental <- rep(NA, nrow(NRI_week_1_continental_reduced))
+NRI_week_1_continental <- rep(NA, nrow(NRI_week_1_continental))
 NRI_week_26_continental <- rep(NA, nrow(passerine.ses.mpd.26.continental))
 
 
 NRI_turnover_ratios_continental <- data.frame(NRI_week_1_continental, NRI_week_26_continental)
-NRI_turnover_ratios_continental$NRI_reduced_week_26 <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$richness_week_1 <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$richness_week_26 <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$NRI_turnover <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$richness_turnover <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$BCR <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$mean_latitude <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$latitude <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$longitude <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$mig_prop_week_1 <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$mig_prop_week_26 <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$mig_prop_turnover <- rep(NA, nrow(NRI_week_1_continental_reduced))
-NRI_turnover_ratios_continental$community <- rep(NA, nrow(NRI_week_1_continental_reduced))
+NRI_turnover_ratios_continental$NRI_week_26 <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$richness_week_1 <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$richness_week_26 <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$NRI_turnover <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$richness_turnover <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$BCR <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$mean_latitude <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$latitude <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$longitude <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$mig_prop_week_1 <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$mig_prop_week_26 <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$mig_prop_turnover <- rep(NA, nrow(NRI_week_1_continental))
+NRI_turnover_ratios_continental$community <- rep(NA, nrow(NRI_week_1_continental))
 
-NRI_turnover_ratios_continental$NRI_week_1_continental <- NRI_week_1_continental_reduced$NRI
+NRI_turnover_ratios_continental$NRI_week_1_continental <- NRI_week_1_continental$NRI
 NRI_turnover_ratios_continental$NRI_week_26_continental <- passerine.ses.mpd.26.continental$NRI
-NRI_turnover_ratios_continental$richness_week_1 <- NRI_week_1_continental_reduced$ntaxa
+NRI_turnover_ratios_continental$richness_week_1 <- NRI_week_1_continental$ntaxa
 NRI_turnover_ratios_continental$richness_week_26 <- passerine.ses.mpd.26.continental$ntaxa
 NRI_turnover_ratios_continental$NRI_turnover <- NRI_turnover_ratios_continental$NRI_week_26_continental - NRI_turnover_ratios_continental$NRI_week_1_continental
 NRI_turnover_ratios_continental$richness_turnover <- NRI_turnover_ratios_continental$richness_week_26 - NRI_turnover_ratios_continental$richness_week_1
-NRI_turnover_ratios_continental$BCR <- NRI_week_1_continental_reduced$BCR
-NRI_turnover_ratios_continental$latitude <- NRI_week_1_continental_reduced$latitude
-NRI_turnover_ratios_continental$longitude <- NRI_week_1_continental_reduced$longitude
-NRI_turnover_ratios_continental$mig_prop_week_1 <- NRI_week_1_continental_reduced$proportion
+NRI_turnover_ratios_continental$BCR <- NRI_week_1_continental$BCR
+NRI_turnover_ratios_continental$latitude <- NRI_week_1_continental$latitude
+NRI_turnover_ratios_continental$longitude <- NRI_week_1_continental$longitude
+NRI_turnover_ratios_continental$mig_prop_week_1 <- NRI_week_1_continental$proportion
 NRI_turnover_ratios_continental$mig_prop_week_26 <- passerine.ses.mpd.26.continental$proportion
 NRI_turnover_ratios_continental$mig_prop_turnover <- NRI_turnover_ratios_continental$mig_prop_week_26 - NRI_turnover_ratios_continental$mig_prop_week_1
-NRI_turnover_ratios_continental$community <- NRI_week_1_continental_reduced$community
+NRI_turnover_ratios_continental$community <- NRI_week_1_continental$community
 
 write.csv(NRI_turnover_ratios_continental, "output/tables/NRI_turnover_ratios_continental.csv")
 write.csv(NTI_turnover_ratios_continental, "output/tables/NTI_turnover_ratios_continental.csv")
