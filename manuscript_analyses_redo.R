@@ -1,4 +1,7 @@
-#manuscript_analyses_redo.R
+# 5. Manuscript data analysis
+# Generates primary data analyses included in the manuscript. 
+# Sets up seasonal comparisons to model seasonal turnover in phylogenetic community metrics against other factors.
+# Generates figures and tables relating to seasonal turnover in phylogenetic community metrics.
 
 
 library(ebirdst)
@@ -1151,77 +1154,6 @@ NRI_mig_prop_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=mig_prop_
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
 ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
-
-
-#### GAMS across the groups
-#### continental
-
-#NTI ~ richness
-gam_continental_NTI_richness <- gam(
-  NTI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
-  data = NTI_turnover_ratios_continental,
-  method = "REML"
-) 
-summary(gam_continental_NTI_richness) #p == 0
-
-#NRI ~ richness
-gam_continental_NRI_richness <- gam(
-  NRI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
-  data = NRI_turnover_ratios_continental,
-  method = "REML"
-) 
-summary(gam_continental_NRI_richness) #p == 0
-
-#NTI ~ mig_prop
-gam_continental_NTI_mig_prop <- gam(
-  NTI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
-  data = NTI_turnover_ratios_continental,
-  method = "REML"
-) 
-summary(gam_continental_NTI_mig_prop) #p == 0
-
-#NRI ~ mig_prop
-gam_continental_NRI_mig_prop <- gam(
-  NRI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
-  data = NRI_turnover_ratios_continental,
-  method = "REML"
-) 
-summary(gam_continental_NRI_mig_prop) #p == 0
-
-
-#### BCR
-
-#NTI ~ richness
-gam_NTI_richness <- gam(
-  NTI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
-  data = NTI_turnover_ratios,
-  method = "REML"
-) 
-summary(gam_NTI_richness) #p == 0
-
-#NRI ~ richness
-gam_NRI_richness <- gam(
-  NRI_turnover ~ richness_turnover + s(latitude, longitude, bs = "gp"),
-  data = NRI_turnover_ratios,
-  method = "REML"
-) 
-summary(gam_NRI_richness) #p == 0
-
-#NTI ~ mig_prop
-gam_NTI_mig_prop <- gam(
-  NTI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
-  data = NTI_turnover_ratios,
-  method = "REML"
-) 
-summary(gam_NTI_mig_prop) #p == 0.159
-
-#NRI ~ mig_prop
-gam_NRI_mig_prop <- gam(
-  NRI_turnover ~ mig_prop_turnover + s(latitude, longitude, bs = "gp"),
-  data = NRI_turnover_ratios,
-  method = "REML"
-) 
-summary(gam_NRI_mig_prop) #p == 0
 
 
 ### model comparison with LMERs
