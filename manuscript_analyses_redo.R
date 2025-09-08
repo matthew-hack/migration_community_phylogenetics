@@ -3,258 +3,36 @@
 # Sets up seasonal comparisons to model seasonal turnover in phylogenetic community metrics against other factors.
 # Generates figures and tables relating to seasonal turnover in phylogenetic community metrics.
 
+#load required libraries
+required.libraries <- c("ebirdst","terra","sf","dplyr","rnaturalearth",
+                        "ape","picante","vegan","ecospat","EcoSimR","betapart",
+                        "ggpubr","phytools","pez","adephylo","phylobase","geiger",
+                        "mvMORPH","OUwie","hisse","BAMMtools","phylosignal",
+                        "Biostrings","reshape2","gridExtra","kableExtra",
+                        "ggplot2","viridis","data.table","lme4","lmerTest",
+                        "sjPlot","geodata","nlme","ggExtra","mgcv","sdmTMB",
+                        "spdep","mapproj","ggspatial","rnaturalearthdata")
 
-library(ebirdst)
-library(terra)
-library(sf)
-library(dplyr)
-library(tidyr)
-library(rnaturalearth)
-library(geodata)
-library(ggplot2)
-library(fields)
-library(stringr)
-library(TreeTools)
-library(viridis)
-#library(rgdal)
-library(raster)
-library(devtools)
-#devtools::install_github("ropensci/rnaturalearthhires")
-extract <- terra::extract
-project <- terra::project #possible source of conf <- ion regarding rgdal for later
+lapply(required.libraries, require, character.only = TRUE)
 
-# Pure intro stuff
+project <- terra::project 
 
-# download a simplified example dataset for Yellow-bellied Sapsucker in Michigan
-path <- ebirdst_download(species = "example_data")
-
-# for non-example data use the species code or name instead of "example_data"
+# load the mapping parameters to generate necessary CRS
 path <- get_species_path("example_data")
-
-occ_lr <- load_raster(path, product = "occurrence", resolution = "lr")
-occ_lr
-
-parse_raster_dates(occ_lr)
-
-# weekly, low res, abundance confidence intervals
-abd_lower <- load_raster(path, product = "abundance", metric = "lower", 
-                         resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", metric = "upper", 
-                         resolution = "lr")
-
-
-# seasonal, low res, mean relative abundance
-abd_seasonal_mean <- load_raster(path, product = "abundance", 
-                                 period = "seasonal", metric = "mean", 
-                                 resolution = "lr")
-
-# season that each layer corresponds to
-names(abd_seasonal_mean)
-
-# just the breeding season layer
-abd_seasonal_mean[["breeding"]]
-
-# seasonal, low res, max occurrence
-occ_seasonal_max <- load_raster(path, product = "occurrence", 
-                                period = "seasonal", metric = "max", 
-                                resolution = "lr")
-
-# full year, low res, maximum relative abundance
-abd_fy_max <- load_raster(path, product = "abundance", 
-                          period = "full-year", metric = "max", 
-                          resolution = "lr")
-
-
-# Working with rasters module
-
-# load seasonal mean relative abundance at low res
-abd_seasonal <- load_raster(path, 
-                            product = "abundance", 
-                            period = "seasonal",
-                            metric = "mean",
-                            resolution = "lr")
-
-abd_breeding <- abd_seasonal[["breeding"]]
-
-# boundary polygon for michigan
-mi <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  filter(postal == "MI") %>% 
-  # project to same coordinate reference system as the raster data
-  st_transform(st_crs(abd_seasonal))
-
-# crop data to michigan
-abd_breeding_mi <- crop(abd_breeding, mi)
-
-# load the mapping parameters
 fac_parameters <- load_fac_map_parameters(path)
 crs <- fac_parameters$custom_projection
 
-# transform to the custom projection using nearest neighbor resampling
-abd_projected <- project(abd_breeding_mi, crs, method = "near")
-
-# quantiles of non-zero values
-v <- values(abd_projected)
-v <- v[!is.na(v) & v > 0]
-bins <- quantile(v, seq(0, 1, by = 0.1))
-# add a bin for 0
-bins <- c(0, bins)
-
-# status and trends palette
-pal <- abundance_palette(length(bins) - 2)
-# add a color for zero
-pal <- c("#e6e6e6", pal)
-
-# natural earth boundaries
-countries <- ne_countries(returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-states <- ne_states(iso_a2 = "US", returnclass = "sf") %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-
-# define the map extent with the michigan polygon
-mi_ext <- mi %>% 
-  st_geometry() %>% 
-  st_transform(crs)
-
-labels <- quantile(bins, c(0, 0.5, 1))
-label_breaks <- seq(0, 1, length.out = length(bins))
-
-abd_median <- load_raster(path, product = "abundance", 
-                          metric = "median", resolution = "lr")
-abd_lower <- load_raster(path, product = "abundance",
-                         metric = "lower", resolution = "lr")
-abd_upper <- load_raster(path, product = "abundance", 
-                         metric = "upper", resolution = "lr")
-
-# download list of passerines
-
-species_codes <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
-                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
-                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
-                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
-                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
-                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
-                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
-                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
-                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
-                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
-                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
-                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
-                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
-
-# "whcsee1", "blueth
-
-species_names <- c("rotbec", "nobtyr", "olsfly", "grepew", "wewpew", "eawpew", "yebfly", "acafly",
-                   "aldfly", "wilfly", "leafly", "hamfly", "gryfly", "dusfly", "pasfly", "corfly", 
-                   "bubfly", "blkpho", "easpho", "saypho", "verfly", "ducfly", "astfly", "grcfly", 
-                   "bncfly", "grekis", "subfly", "trokin", "coukin", "caskin", "thbkin", "weskin", 
-                   "easkin", "grykin", "sctfly", "bkcvir1", "whevir", "belvir", "gryvir", "hutvir", 
-                   "yetvir", "casvir", "buhvir", "plsvir", "phivir", "warvir", "reevir1", "bkwvir", 
-                   "logshr", "norshr4", "gryjay", "brnjay", "grnjay", "pinjay", "stejay", "blujay", 
-                   "flsjay", "issjay", "cowscj1", "wooscj2", "mexjay4", "bkbmag1", "yebmag", "clanut", 
-                   "amecro", "fiscro", "chirav", "comrav", "carchi", "bkcchi", "mouchi", "mexchi", 
-                   "chbchi", "borchi2", "gyhchi", "britit", "oaktit", "juntit1", "tuftit", "blctit4", 
-                   "verdin", "horlar", "nrwswa", "purmar", "treswa", "vigswa", "banswa", "cliswa", 
-                   "cavswa", "rewbul", "arcwar1", "bushti", "wrenti", "ruckin", "gockin", "rebnut", 
-                   "whbnut", "pygnut", "bnhnut", "brncre", "buggna", "bktgna", "calgna", "bkcgna", 
-                   "rocwre", "canwre", "houwre", "pacwre1", "winwre3", "sedwre1", "marwre", "carwre", 
-                   "bewwre", "cacwre", "amedip", "eursta", "commyn", "grycat", "cubthr", "brnthr", 
-                   "lobthr", "benthr", "calthr", "lecthr", "crithr", "sagthr", "normoc", "easblu", 
-                   "wesblu", "moublu", "towsol", "varthr", "veery", "gycthr", "bicthr", "swathr", 
-                   "herthr", "woothr", "clcrob", "amerob", "norwhe", "bohwax", "cedwax", "phaino", 
-                   "oliwar", "orabis1", "nutman", "houspa", "eutspa", "eaywag", "amepip", "sprpip", 
-                   "evegro", "pingro", "gcrfin", "bkrfin", "bcrfin", "houfin", "purfin", "casfin", 
-                   "comred", "hoared", "redcro", "whwcro", "pinsis", "lesgol", "lawgol", "amegfi", 
-                   "laplon", "chclon", "smilon", "mcclon", "snobun", "mckbun", "ruwspa", "botspa", 
-                   "casspa", "bacspa", "graspa", "olispa", "chispa", "clcspa", "bkcspa", "fiespa", 
-                   "brespa", "fisspa", "bktspa", "larspa", "larbun", "amtspa", "foxspa", "daejun", 
-                   "yeejun", "whcspa", "gocspa", "harspa", "whtspa", "sagspa1", "belspa2", "vesspa", 
-                   "lecspa", "seaspa", "nstspa", "sstspa", "savspa", "baispa", "henspa", "sonspa", 
-                   "linspa", "swaspa", "cantow", "abetow", "caltow", "rucspa", "gnttow", "spotow", 
-                   "eastow", "yebcha", "yehbla", "boboli", "wesmea", "easmea", "orcori", "hooori", 
-                   "bulori", "spbori", "altori", "audori", "balori", "scoori", "rewbla", "tribla", 
-                   "shicow", "brocow", "bnhcow", "rusbla", "brebla", "comgra", "botgra", "grtgra", 
-                   "ovenbi1", "woewar1", "louwat", "norwat", "gowwar", "buwwar", "bawwar", "prowar",
-                   "swawar", "tenwar", "orcwar", "colwar", "lucwar", "naswar", "virwar", "conwar", 
-                   "macwar", "mouwar", "kenwar", "comyel", "hoowar", "amered", "kirwar", "camwar", 
-                   "cerwar", "norpar", "tropar", "magwar", "babwar", "bkbwar", "yelwar", "chswar", 
-                   "bkpwar", "btbwar", "palwar", "pinwar", "yerwar", "yetwar", "prawar", "grawar", 
-                   "btywar", "towwar", "herwar", "gchwar", "btnwar", "canwar", "wlswar", "refwar", 
-                   "paired", "heptan", "sumtan", "scatan", "westan", "norcar", "pyrrhu", "robgro", 
-                   "bkhgro", "blugrb1", "lazbun", "indbun", "varbun", "paibun", "dickci")
-
-#, "whcsee1"
-
-#download data for each species
-
-#for(i in 1:length(species_codes)){
-#  str_sub(species_codes[i]) <- ebirdst_download(species = species_codes[i])
-#}
-
-#create passerine abd seasonal mean files
-
-#for(i in 1:length(species_names)){
-#  assign(paste0(species_names[i], "_path"), get_species_path(species_names[i]))
-#}
-
-#load_raster(paste0("data/ebirdst/2021/", species_names[1]), product = "abundance",
-#            period = "seasonal", metric = "mean", 
-#            resolution = "hr")
-
-#for(i in 1:length(species_names)){
-#  assign(paste0(species_names[i], "_abd_seasonal_mean"), load_raster(paste0("data/ebirdst/2021/", species_names[i]), product = "abundance", 
-#                                                                     period = "seasonal", metric = "mean", 
-#                                                                     resolution = "hr"))
-#}
-
-#see if you can get a tree working
-
-# Check for needed packages, and install the missing ones
-required.libraries <- c("ape", "picante", 
-                        "pez", "phytools",
-                        "vegan", "adephylo", 
-                        "phylobase", "geiger", 
-                        "mvMORPH", "OUwie", 
-                        "hisse", "BAMMtools",
-                        "phylosignal", "Biostrings",
-                        "devtools","ggplot2", 
-                        "kableExtra", "betapart", "gridExtra",
-                        "reshape2")
-
-# Load all required libraries at once
-lapply(required.libraries, require, character.only = TRUE)
+#load example raster
+ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
+                                         period = "seasonal", metric = "mean", 
+                                         resolution = "hr")
+#use example raster to crop to US boundaries
+us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
+  st_transform(st_crs(ovenbi1_abd_seasonal_mean))
 
 #load in the tree
 tree.passerine <- read.nexus("phylogeny_data/jetz_passerine_tree/jetz_consensus_tree.tre")
 tree.passerine <- root(tree.passerine, outgroup = c(263:297))
-
 
 species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_cooperi",
                         "Contopus_pertinax", "Contopus_sordidulus", "Contopus_virens",
@@ -359,18 +137,12 @@ species_passerines <- c("Pachyramphus_aglaiae", "Camptostoma_imberbe","Contopus_
 
 passerine.tree <- drop.tip(tree.passerine,tree.passerine$tip.label[-match(species_passerines, tree.passerine$tip.label)])
 
-#now try to get to individual weeks for each warbler (wrap)
-#this gets me to a specific week (0608)
-
-
 ovenbi1_abd_seasonal_mean <- load_raster("data/ebirdst/2021/ovenbi1", product = "abundance", 
                                          period = "seasonal", metric = "mean", 
                                          resolution = "hr")
 
 us <- ne_countries(country = "united states of america", type = "countries", returnclass = "sf") %>% 
   st_transform(st_crs(ovenbi1_abd_seasonal_mean))
-
-
 
 ###### analyses start here
 #read in csvs of NRIs and NTIs redos 
@@ -409,10 +181,7 @@ us <- ne_countries(country = "united states of america", type = "countries", ret
 # combined_week_26_NTI$latitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,2]
 # combined_week_26_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), combined_week_26_NTI[,c("x","y")])[,1]
 
-
 ##### redo c-score analyses
-# library(EcoSimR)
-# library(ecospat)
 # ##### create a histogram with distributions of phylogenetic distance means across all BCRs
 # for(i in 5:37){
 #   assign(paste0("bcr_", i, "_week_26"), read.csv(paste0("output/bcr_community_data/26/community_26_bcr_", i, ".csv")))
@@ -712,7 +481,6 @@ us <- ne_countries(country = "united states of america", type = "countries", ret
 # both_weeks_density[both_weeks_density$week == "2","week"] <- "Week 1"
 # both_weeks_density[both_weeks_density$week == "1","week"] <- "Week 26"
 # 
-# library(ggpubr)
 # ggarrange(week1density, week26density, ncol = 2, nrow = 1, common.legend = TRUE, legend="bottom")
 # 
 # ggplot(both_weeks_density, aes(x=value, group=type, fill=type)) +
@@ -817,8 +585,6 @@ us <- ne_countries(country = "united states of america", type = "countries", ret
 NRI_turnover_ratios <- read.csv("output/tables/NRI_turnover_ratios.csv", row.names=1)
 NTI_turnover_ratios <- read.csv("output/tables/NTI_turnover_ratios.csv", row.names=1)
 
-
-library(ggExtra)
 #### first try to plot them nicer
 #plot NTI turnover vs. richness turnover
 # NTI_turnover_plot <- ggplot(mapping = aes(x = NTI_turnover_ratios$richness_turnover, y = NTI_turnover_ratios$NTI_turnover)) + 
@@ -916,7 +682,6 @@ library(ggExtra)
 # NTI_turnover_ratios_continental$mig_prop_turnover <- NTI_turnover_ratios_continental$mig_prop_week_26 - NTI_turnover_ratios_continental$mig_prop_week_1
 # NTI_turnover_ratios_continental$community <- NTI_week_1_continental_reduced$community
 # 
-# library(ggExtra)
 # NTI_turnover_plot <- ggplot(mapping = aes(x = NTI_turnover_ratios_continental$richness_turnover, y = NTI_turnover_ratios_continental$NTI_turnover)) + 
 #   geom_point(aes(color = NTI_turnover_ratios_continental$latitude), size=4) + 
 #   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -925,7 +690,7 @@ library(ggExtra)
 #   geom_smooth(method = "lm")
 # ggMarginal(NTI_turnover_plot, fill = "green")
 # 
-# 
+#
 # #NRI continental
 # NRI_week_1_continental <- rep(NA, nrow(NRI_week_1_continental_reduced))
 # NRI_week_26_continental <- rep(NA, nrow(passerine.ses.mpd.26.continental))
@@ -965,9 +730,6 @@ library(ggExtra)
 NRI_turnover_ratios_continental <- read.csv("output/tables/NRI_turnover_ratios_continental.csv", row.names=1)
 NTI_turnover_ratios_continental <- read.csv("output/tables/NTI_turnover_ratios_continental.csv", row.names=1)
 
-
-
-library(ggExtra)
 NRI_turnover_plot <- ggplot(mapping = aes(x = NRI_turnover_ratios_continental$richness_turnover, y = NRI_turnover_ratios_continental$NRI_turnover)) + 
   geom_point(aes(color = NRI_turnover_ratios_continental$latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -984,90 +746,6 @@ summary(test_NTI_turnover_gls)
 #test with straight up lm
 subset_NTI_turnover_plot <- NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental), 5000),]
 #fully has spatial autocorrelation
-
-library(mgcv)
-library(glmmTMB)
-
-#play around with GLMMTMB
-#numeric factor recording coordinates (not currently using)
-# NTI_turnover_ratios_continental$pos <- numFactor(scale(NTI_turnover_ratios_continental$latitude), scale(NTI_turnover_ratios_continental$longitude))
-#dummy group factor to be used as a random term (not currently using)
-# NTI_turnover_ratios_continental$ID <- factor(rep(1, nrow(NTI_turnover_ratios_continental)))
-
-subset_NTI_turnover_plot <- NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental), 10000),]
-
-#glmmTMB tests with all combos
-#### continental
-
-#NTI ~ richness
-glmmTMB_continental_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover + (1 | BCR), NTI_turnover_ratios_continental)
-summary(glmmTMB_continental_NTI_richness) #p == 0, richness_turnover estimate = -0.0055
-
-#NRI ~ richness
-glmmTMB_continental_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover + (1 | BCR), NRI_turnover_ratios_continental)
-summary(glmmTMB_continental_NRI_richness) #p == 0, richness_turnover estimate = 0.0191
-
-#NTI ~ mig_prop
-glmmTMB_continental_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover + (1 | BCR), NTI_turnover_ratios_continental)
-summary(glmmTMB_continental_NTI_mig_prop) #p == 0, mig_prop_turnover estimate = -0.457
-
-#NRI ~ mig_prop
-glmmTMB_continental_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover + (1 | BCR), NRI_turnover_ratios_continental)
-summary(glmmTMB_continental_NRI_mig_prop) #p == 0, mig_prop_turnover estimate = 2.221
-
-#### BCR
-#NTI ~ richness
-glmmTMB_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover + (1 | BCR), NTI_turnover_ratios)
-summary(glmmTMB_NTI_richness) #p == 0.418, richness_turnover estimate = 0.00058
-
-#NRI ~ richness
-glmmTMB_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover + (1 | BCR), NRI_turnover_ratios)
-summary(glmmTMB_NRI_richness) #p == 0, richness_turnover estimate = 0.017
-
-#NTI ~ mig_prop
-glmmTMB_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover + (1 | BCR), NTI_turnover_ratios)
-summary(glmmTMB_NTI_mig_prop) #p == 0.0025, mig_prop_turnover estimate = 0.195
-
-#NRI ~ mig_prop
-glmmTMB_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover + (1 | BCR), NRI_turnover_ratios)
-summary(glmmTMB_NRI_mig_prop) #p == 0, mig_prop_turnover estimate = 2.297
-
-
-
-#### test without spatial correlation structure
-#NTI ~ richness
-glmmTMB_continental_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover, NTI_turnover_ratios_continental)
-summary(glmmTMB_continental_NTI_richness) #p == 0, richness_turnover estimate = -0.0128
-
-#NRI ~ richness
-glmmTMB_continental_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover, NRI_turnover_ratios_continental)
-summary(glmmTMB_continental_NRI_richness) #p == 0, richness_turnover estimate = 0.0294
-
-#NTI ~ mig_prop
-glmmTMB_continental_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover, NTI_turnover_ratios_continental)
-summary(glmmTMB_continental_NTI_mig_prop) #p == 0, mig_prop_turnover estimate = -1.488
-
-#NRI ~ mig_prop
-glmmTMB_continental_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover, NRI_turnover_ratios_continental)
-summary(glmmTMB_continental_NRI_mig_prop) #p == 0, mig_prop_turnover estimate = 3.112
-
-#### BCR
-#NTI ~ richness
-glmmTMB_NTI_richness <- glmmTMB(NTI_turnover ~ richness_turnover, NTI_turnover_ratios)
-summary(glmmTMB_NTI_richness) #p == 0, richness_turnover estimate = -0.022
-
-#NRI ~ richness
-glmmTMB_NRI_richness <- glmmTMB(NRI_turnover ~ richness_turnover, NRI_turnover_ratios)
-summary(glmmTMB_NRI_richness) #p == 0, richness_turnover estimate = 0.015
-
-#NTI ~ mig_prop
-glmmTMB_NTI_mig_prop <- glmmTMB(NTI_turnover ~ mig_prop_turnover, NTI_turnover_ratios)
-summary(glmmTMB_NTI_mig_prop) #p == 0, mig_prop_turnover estimate = -1.737
-
-#NRI ~ mig_prop
-glmmTMB_NRI_mig_prop <- glmmTMB(NRI_turnover ~ mig_prop_turnover, NRI_turnover_ratios)
-summary(glmmTMB_NRI_mig_prop) #p == 0, mig_prop turnover estimate = 1.793
-
 
 #### plots
 
@@ -1156,68 +834,11 @@ NRI_mig_prop_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=mig_prop_
 ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
 
 
-### model comparison with LMERs
-
-###NTIs
-#all lmers
-library(lme4)
-library(AICcmodavg)
-library(sjPlot)
-
-
-#### regional
-lmer_NTI_richness_migprop_BCR <- lmer(NTI_turnover ~ richness_turnover + mig_prop_turnover + (1 | BCR), data = NTI_turnover_ratios)
-lmer_NTI_richness_BCR <- lmer(NTI_turnover ~ richness_turnover + (1 | BCR), data = NTI_turnover_ratios)
-lmer_NTI_mig_prop_BCR <- lmer(NTI_turnover ~ mig_prop_turnover + (1 | BCR), data = NTI_turnover_ratios)
-lmer_NTI_mig_prop_interaction_BCR <- lmer(NTI_turnover ~ richness_turnover + mig_prop_turnover + richness_turnover*mig_prop_turnover + (1 | BCR), data = NTI_turnover_ratios)
-lmer_NTI_null <- lmer(NTI_turnover ~ (1 | BCR), data = NTI_turnover_ratios)
-
-
-NTI_models <- list(lmer_NTI_richness_migprop_BCR, lmer_NTI_mig_prop_interaction_BCR,
-                   lmer_NTI_richness_BCR, lmer_NTI_mig_prop_BCR, lmer_NTI_null)
-
-NTI_model.names <- c('lmer_NTI_richness_migprop_BCR', 'lmer_NTI_mig_prop_interaction_BCR',
-                     'lmer_NTI_richness_BCR', 'lmer_NTI_mig_prop_BCR','lmer_NTI_null')
-
-aictab(cand.set = NTI_models, modnames = NTI_model.names)
-tab_model(lmer_NTI_mig_prop_BCR)
-tab_model(lmer_NTI_richness_BCR)
-tab_model(lmer_NTI_richness_migprop_BCR)
-tab_model(lmer_NTI_mig_prop_interaction_BCR)
-
-
-###NRIs
-#all lmers
-lmer_NRI_richness_turnover_migprop_BCR <- lmer(NRI_turnover ~ richness_turnover + mig_prop_turnover + (1 | BCR), data = NRI_turnover_ratios)
-lmer_NRI_richness_turnover_BCR <- lmer(NRI_turnover ~ richness_turnover + (1 | BCR), data = NRI_turnover_ratios)
-lmer_NRI_mig_prop_turnover_BCR <- lmer(NRI_turnover ~ mig_prop_turnover + (1 | BCR), data = NRI_turnover_ratios)
-lmer_NRI_mig_prop_turnover_interaction_BCR <- lmer(NRI_turnover ~ richness_turnover + mig_prop_turnover + richness_turnover*mig_prop_turnover + (1 | BCR), data = NRI_turnover_ratios)
-lmer_NRI_null <- lmer(NRI_turnover ~ (1 | BCR), data = NRI_turnover_ratios)
-
-NRI_models <- list(lmer_NRI_richness_turnover_migprop_BCR, lmer_NRI_mig_prop_turnover_interaction_BCR,
-                   lmer_NRI_richness_turnover_BCR, lmer_NRI_mig_prop_turnover_BCR, lmer_NRI_null)
-
-NRI_model.names <- c('lmer_NRI_richness_turnover_migprop_BCR', 'lmer_NRI_mig_prop_turnover_interaction_BCR',
-                     'lmer_NRI_richness_turnover_BCR', 'lmer_NRI_mig_prop_turnover_BCR', 'lmer_NRI_null')
-
-aictab(cand.set = NRI_models, modnames = NRI_model.names)
-tab_model(lmer_NRI_mig_prop_turnover_interaction_BCR)
-tab_model(lmer_NRI_mig_prop_turnover_BCR)
-tab_model(lmer_NRI_richness_turnover_BCR)
-tab_model(lmer_NRI_richness_turnover_migprop_BCR)
-
-
-#### continental
-
-
-
 ### try another new method: sdmTMB
 
-library(sdmTMB)
 #test out sdmTMB
 head(NTI_turnover_ratios)
 
-library(sf)
 mesh <- make_mesh(NTI_turnover_ratios, xy_cols = c("longitude", "latitude"), cutoff = 50)
 plot(mesh)
 
@@ -1458,7 +1079,6 @@ compare_sdmTMB_models(sdmTMB_NRI_richness_continental, sdmTMB_NRI_mig_prop_conti
 #test for spatial autocorrelation
 
 #NTI turnover ratios
-library(spdep)
 test_NTI_turnover_ratios <- NTI_turnover_ratios[,-c(3,9)]
 test_NTI_turnover_ratios <- test_NTI_turnover_ratios[complete.cases(test_NTI_turnover_ratios),]
 coords <- cbind(test_NTI_turnover_ratios$longitude, test_NTI_turnover_ratios$latitude)
@@ -1508,18 +1128,11 @@ moran.test(residuals(model4), lw4)
 
 
 ### Consider re-doing Figure 4
-library(mapproj)
-library(sf)
-library(ggplot2)
-library(ggspatial)
-library(rnaturalearth)
-library(rnaturalearthdata)
 
 crs_102004 <- "+proj=lcc +lat_1=33 +lat_2=45 +lat_0=39 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
 
 na_basemap <- ne_countries(continent = "North America", returnclass = "sf")
 na_basemap_proj <- st_transform(na_basemap, crs = crs_102004)
-
 
 NRI_turnover_ratios_sf <- st_as_sf(NRI_turnover_ratios, coords = c("longitude", "latitude"), crs = 4326)
 NRI_turnover_ratios_proj <- st_transform(NRI_turnover_ratios_sf, crs = crs_102004)
