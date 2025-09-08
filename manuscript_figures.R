@@ -205,10 +205,6 @@ dev.off()
 #load complete NRI and NTI datasets generated in 3_community_migratory_proportion.R
 all_combined_week_NRIs_df <- read.csv("output/tables/combined_NRI_df.csv")
 all_combined_week_NTIs_df <- read.csv("output/tables/combined_NTI_df.csv")
-all_combined_week_NRIs_df <- data.table::rbindlist(all_combined_week_NRIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
-  as.data.frame()
-all_combined_week_NTIs_df <- data.table::rbindlist(all_combined_week_NTIs, use.names=TRUE, idcol=TRUE, fill=TRUE) %>% 
-  as.data.frame()
 
 #calculate exploratory values for species richness
 max(na.omit(all_combined_week_NTIs_df$ntaxa)) #109
@@ -240,11 +236,6 @@ all_mig_prop_df <- data.table::rbindlist(all_mig_props, use.names=TRUE, idcol=TR
   as.data.frame()
 
 #calculate exploratory values for migratory proportion
-max(na.omit(all_combined_week_NTIs_df$ntaxa)) #109
-min(na.omit(all_combined_week_NTIs_df$ntaxa)) #0
-median(na.omit(all_combined_week_NTIs_df$ntaxa)) #34
-sd(na.omit(all_combined_week_NTIs_df$ntaxa)) #16.13621
-
 max(all_mig_prop_df$proportion[is.finite(all_mig_prop_df$proportion)]) #1
 min(na.omit(all_mig_prop_df$proportion)) #0
 median(na.omit(all_mig_prop_df$proportion)) #0.857
