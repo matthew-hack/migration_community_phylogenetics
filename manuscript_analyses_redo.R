@@ -182,11 +182,11 @@ combined_week_26_NTI$longitude <- sf_project(from = crs, to = st_crs(4326), comb
 ##### create a histogram with distributions of phylogenetic distance means across all BCRs
 for(i in 5:37){
   assign(paste0("bcr_", i, "_week_26"), read.csv(paste0("output/bcr_community_data/26/community_26_bcr_", i, ".csv")))
-} #takes about an hour
+} #takes about a half hour
 
 for(i in 5:37){
   assign(paste0("bcr_", i, "_week_1"), read.csv(paste0("output/bcr_community_data/1/community_1_bcr_", i, ".csv")))
-} #takes about an hour
+} #takes about a half hour
 
 bcr_week_26_list <- list(bcr_5_week_26, bcr_6_week_26, bcr_7_week_26, bcr_8_week_26, bcr_9_week_26, bcr_10_week_26,
                          bcr_11_week_26, bcr_12_week_26, bcr_13_week_26, bcr_14_week_26, bcr_15_week_26, bcr_16_week_26,
@@ -308,7 +308,6 @@ hist(week_26_mean_NTI_values, freq=FALSE,
      breaks=5, col=rgb(1,0,0,1/2), add=TRUE)
 abline(v=mean(week_26_mean_NRI_values), col="blue", lwd=2)
 abline(v=mean(week_26_mean_NTI_values), col="red", lwd=2)
-
 
 #### replicate process for week 1
 bcr_week_1_list <- list(bcr_5_week_1, bcr_6_week_1, bcr_7_week_1, bcr_8_week_1, bcr_9_week_1, bcr_10_week_1,
