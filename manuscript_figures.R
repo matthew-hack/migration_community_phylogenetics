@@ -198,7 +198,7 @@ ggplot(nspecies_hist, aes(x=value, group=type, fill=type)) +
   theme(legend.position = "bottom", text = element_text(size = 25))
 dev.off()
 
-##### GENERATE EXTREME VALUES AND EXPLORATORY CALCULATIONS FOR RESULTS SECTION OF MANUSCRIPT #####
+##### GENERATE EXTREME VALUES AND EXPLORATORY CALCULATIONS FOR RESULTS SECTION #####
 
 ### EXPLORATORY DATA, SPECIES RICHNESS AND MIGRATORY PROPORTION ###
 
