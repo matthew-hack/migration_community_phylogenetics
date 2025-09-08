@@ -738,7 +738,9 @@ NTI_turnover_ratios_continental <- read.csv("output/tables/NTI_turnover_ratios_c
 
 ##### GENERATE PLOTS FOR SEASONAL TURNOVER IN COMMUNITY PHYLOGENETIC METRICS VS. SPECIES RICHNESS AND MIGRATORY PROPORTION (FIGURE 4) #####
 
-#plot NTI turnover vs. richness turnover
+### CONTINENTAL DATASET
+
+#plot NTI turnover vs. species richness turnover
 NTI_richness_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_continental, aes(x=richness_turnover, y=NTI_turnover)) + 
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -746,9 +748,12 @@ NTI_richness_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_cont
   labs(x = "Richness Difference", y = "NTI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
-ggMarginal(NTI_richness_turnover_plot_continental, fill = "green")
 
-#plot NRI turnover vs. richness turnover
+pdf(file = 'output/figures/NTI_richness_turnover_plot_continental.pdf')
+ggMarginal(NTI_richness_turnover_plot_continental, fill = "green")
+dev.off()
+
+#plot NRI turnover vs. species richness turnover
 NRI_richness_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_continental, aes(x=richness_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -756,9 +761,12 @@ NRI_richness_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_cont
   labs(x = "Richness Difference", y = "NRI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
-ggMarginal(NRI_richness_turnover_plot_continental, fill = "green")
 
-#plot NTI turnover vs. mig_prop turnover
+pdf(file = 'output/figures/NRI_richness_turnover_plot_continental.pdf')
+ggMarginal(NRI_richness_turnover_plot_continental, fill = "green")
+dev.off()
+
+#plot NTI turnover vs. migratory proportion turnover
 NTI_mig_prop_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_continental, aes(x=mig_prop_turnover, y=NTI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -766,9 +774,12 @@ NTI_mig_prop_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_cont
   labs(x = "Proportion Difference", y = "NTI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
-ggMarginal(NTI_mig_prop_turnover_plot_continental, fill = "green")
 
-#plot NRI turnover vs. mig_prop turnover
+pdf(file = 'output/figures/NTI_mig_prop_turnover_plot_continental.pdf')
+ggMarginal(NTI_mig_prop_turnover_plot_continental, fill = "green")
+dev.off()
+
+#plot NRI turnover vs. migratory proportion turnover
 NRI_mig_prop_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_continental, aes(x=mig_prop_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -776,11 +787,14 @@ NRI_mig_prop_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_cont
   labs(x = "Proportion Difference", y = "NRI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
+
+pdf(file = 'output/figures/NRI_mig_prop_turnover_plot_continental.pdf')
 ggMarginal(NRI_mig_prop_turnover_plot_continental, fill = "green")
+dev.off()
 
+### ECOREGIONAL DATASET
 
-### BCR
-#plot NTI turnover vs. richness turnover
+#plot NTI turnover vs. species richness turnover
 NTI_richness_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=richness_turnover, y=NTI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -788,9 +802,12 @@ NTI_richness_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=richness_
   labs(x = "Richness Difference", y = "NTI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
-ggMarginal(NTI_richness_turnover_plot, fill = "green")
 
-#plot NRI turnover vs. richness turnover
+pdf(file = 'output/figures/NTI_richness_turnover_plot_ecoregional.pdf')
+ggMarginal(NTI_richness_turnover_plot, fill = "green")
+dev.off()
+
+#plot NRI turnover vs. species richness turnover
 NRI_richness_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=richness_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -798,9 +815,12 @@ NRI_richness_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=richness_
   labs(x = "Richness Difference", y = "NRI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
-ggMarginal(NRI_richness_turnover_plot, fill = "green")
 
-#plot NTI turnover vs. mig_prop turnover
+pdf(file = 'output/figures/NRI_richness_turnover_plot_ecoregional.pdf')
+ggMarginal(NRI_richness_turnover_plot, fill = "green")
+dev.off()
+
+#plot NTI turnover vs. migratory proportion turnover
 NTI_mig_prop_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=mig_prop_turnover, y=NTI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -808,9 +828,12 @@ NTI_mig_prop_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=mig_prop_
   labs(x = "Proportion Difference", y = "NTI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
-ggMarginal(NTI_mig_prop_turnover_plot, fill = "green")
 
-#plot NRI turnover vs. mig_prop turnover
+pdf(file = 'output/figures/NTI_mig_prop_turnover_plot_ecoregional.pdf')
+ggMarginal(NTI_mig_prop_turnover_plot, fill = "green")
+dev.off()
+
+#plot NRI turnover vs. migratory proportion turnover
 NRI_mig_prop_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=mig_prop_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=4) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
@@ -818,16 +841,15 @@ NRI_mig_prop_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=mig_prop_
   labs(x = "Proportion Difference", y = "NRI Difference") +
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE)
+
+pdf(file = 'output/figures/NRI_mig_prop_turnover_plot_ecoregional.pdf')
 ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
+dev.off()
 
 
 ### try another new method: sdmTMB
 
-#test out sdmTMB
-head(NTI_turnover_ratios)
-
 mesh <- make_mesh(NTI_turnover_ratios, xy_cols = c("longitude", "latitude"), cutoff = 50)
-plot(mesh)
 
 ### regional
 ### regional NTI
