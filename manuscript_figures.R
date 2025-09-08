@@ -312,6 +312,7 @@ max(na.omit(all_combined_week_NRIs_df$NRI)) #7.109175
 min(na.omit(all_combined_week_NRIs_df$NRI)) #-4.155872
 median(na.omit(all_combined_week_NRIs_df$NRI)) #-0.2703786
 sd(na.omit(all_combined_week_NRIs_df$NRI)) #1.039971
+#proportion of NRI values that are positive
 length(na.omit(all_combined_week_NRIs_df$NRI[all_combined_week_NRIs_df$NRI > 0]))/length(na.omit(all_combined_week_NRIs_df$NRI)) #0.389
 
 #calculate exploratory values for NTI
@@ -319,19 +320,44 @@ max(na.omit(all_combined_week_NTIs_df$NTI)) #4.776999
 min(na.omit(all_combined_week_NTIs_df$NTI)) #-4.575684
 median(na.omit(all_combined_week_NTIs_df$NTI)) #0.3231434
 sd(na.omit(all_combined_week_NTIs_df$NTI)) #0.973363
+#proportion of NTI values that are positive
 length(na.omit(all_combined_week_NTIs_df$NTI[all_combined_week_NTIs_df$NTI > 0]))/length(na.omit(all_combined_week_NTIs_df$NTI)) #0.626
+
+### CONTINENTAL DATASET EXTREME VALUES ###
+
+#calculate exploratory values for NRI
+max(na.omit(NRIlistdf$NRI)) #6.900493
+min(na.omit(NRIlistdf$NRI)) #-3.505649
+median(na.omit(NRIlistdf$NRI)) #0.324417
+sd(na.omit(NRIlistdf$NRI)) #1.095255
+#proportion of NRI values that are positive
+length(na.omit(NRIlistdf$NRI[NRIlistdf$NRI > 0]))/length(na.omit(NRIlistdf$NRI)) #0.652
+
+#calculate exploratory values for NTI
+max(na.omit(NTIlistdf$NTI)) #4.987022
+min(na.omit(NTIlistdf$NTI)) #-4.432797
+median(na.omit(NTIlistdf$NTI)) #0.1363374
+sd(na.omit(NTIlistdf$NTI)) #0.9952832
+#proportion of NTI values that are positive
+length(na.omit(NTIlistdf$NTI[NTIlistdf$NTI > 0]))/length(na.omit(NTIlistdf$NTI)) #0.553
 
 ##### GENERATE VISUALIZATIONS FOR SUPPLEMENTAL FIGURE 2 #####
 
 #generate histograms for NRI and NTI values (ecoregional dataset)
 
+#generate dataframe to populate data for NRI and NTI
 nri_nti_hist <- data.frame(matrix(NA, nrow = nrow(all_combined_week_NRIs_df)+nrow(all_combined_week_NTIs_df), ncol = 2))
 colnames(nri_nti_hist) <- c("value", "type")
+#populate NRI data
 nri_nti_hist[c(1:nrow(all_combined_week_NRIs_df)), 1] <- all_combined_week_NRIs_df$NRI
+#populate NTI data
 nri_nti_hist[c((nrow(all_combined_week_NRIs_df) + 1)):(nrow(nri_nti_hist)),1] <- all_combined_week_NTIs_df$NTI
+#add labels
 nri_nti_hist[c(1:nrow(all_combined_week_NRIs_df)), 2] <- "NRI"
 nri_nti_hist[c((nrow(all_combined_week_NRIs_df) + 1)):(nrow(nri_nti_hist)),2] <- "NTI"
 
+#plot histogram of NRI and NTI values (ecoregional pool)
+pdf(file = 'output/figures/NRI_NTI_histogram_ecoregional.pdf')
 ggplot(nri_nti_hist, aes(x=value, group=type, fill=type)) +
   geom_density(alpha=0.67) +
   xlab("NRI vs NTI Distribution (Ecoregion Pool)") +
@@ -339,42 +365,22 @@ ggplot(nri_nti_hist, aes(x=value, group=type, fill=type)) +
   guides(fill=guide_legend(title="Metric")) +
   scale_fill_manual(values=c("red","blue")) +
   theme(legend.position = "bottom", text = element_text(size = 25))
+dev.off()
 
-#### convert x and y values to lat and long
+#generate histograms for NRI and NTI values (continental dataset)
 
-all_combined_week_NRIs_df$latitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NRIs_df[,c("x","y")])[,2]
-all_combined_week_NRIs_df$longitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NRIs_df[,c("x","y")])[,1]
-
-all_combined_week_NTIs_df$latitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NTIs_df[,c("x","y")])[,2]
-all_combined_week_NTIs_df$longitude <- sf_project(from = crs, to = st_crs(4326), all_combined_week_NTIs_df[,c("x","y")])[,1]
-
-#figure out all those positive longitude values
-max(all_combined_week_NRIs_df[all_combined_week_NRIs_df$longitude > 0,"y"]) #y = 8672163 -- filter that out
-
-
-### get extreme values for continental pool (load all values from annual cycle analyses script)
-
-max(na.omit(NRIlistdf$NRI)) #7.109175
-min(na.omit(NRIlistdf$NRI)) #-4.155872
-median(na.omit(NRIlistdf$NRI)) #-0.2703786
-sd(na.omit(NRIlistdf$NRI)) #1.039971
-length(na.omit(NRIlistdf$NRI[NRIlistdf$NRI > 0]))/length(na.omit(NRIlistdf$NRI)) #0.389
-
-
-max(na.omit(NTIlistdf$NTI)) #7.109175
-min(na.omit(NTIlistdf$NTI)) #-4.155872
-median(na.omit(NTIlistdf$NTI)) #-0.2703786
-sd(na.omit(NTIlistdf$NTI)) #1.039971
-length(na.omit(NTIlistdf$NTI[NTIlistdf$NTI > 0]))/length(na.omit(NTIlistdf$NTI)) #0.389
-
-#histogram for NRI and NTI values (continental level)
+#generate dataframe to populate data for NRI and NTI
 nri_nti_hist_continental <- data.frame(matrix(NA, nrow = nrow(NRIlistdf)+nrow(NTIlistdf), ncol = 2))
 colnames(nri_nti_hist_continental) <- c("value", "type")
+#populate NRI data
 nri_nti_hist_continental[c(1:nrow(NRIlistdf)), 1] <- NRIlistdf$NRI
+#populate NTI data
 nri_nti_hist_continental[c((nrow(NRIlistdf) + 1)):(nrow(nri_nti_hist_continental)),1] <- NTIlistdf$NTI
+#add labels
 nri_nti_hist_continental[c(1:nrow(NRIlistdf)), 2] <- "NRI"
 nri_nti_hist_continental[c((nrow(NRIlistdf) + 1)):(nrow(nri_nti_hist_continental)),2] <- "NTI"
 
+#plot histogram of NRI and NTI values (continental pool)
 ggplot(nri_nti_hist_continental, aes(x=value, group=type, fill=type)) +
   geom_density(alpha=0.67) +
   xlab("NRI vs NTI Distribution (Continental Pool)") +
