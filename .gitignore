@@ -3,9 +3,7 @@
 *
 
 # --- Keep these R scripts ---
-!annual_cycle_analyses.R
 !community_migratory_proportion.R
-!cscore_calculations.R
 !manuscript_analyses_redo.R
 !manuscript_figures.R
 !raster_download.R
