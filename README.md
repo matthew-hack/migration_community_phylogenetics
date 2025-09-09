@@ -19,6 +19,3 @@ This script generates the values used in the Results section of the manuscript, 
 This script processes seasonal turnover (from winter to summer) in community phylogenetic metrics, along with species richness and migratory proportion, across both species pool levels. Spatial GLMMs are carried out to analyze the seasonality of community phylogenetic metrics through space, and to model seasonal turnover in community phylogenetic metrics against other factors. The script also analyzes the phylogenetic distance of NRI and NTI values within summer and winter (SF1) and generates figures depicting seasonal turnover in phylogenetic community metrics.
 
 
-Scripts to be deleted from this folder (folded into other scripts):
-1. cscore_calculations.R
-2. annual_cycle_analyses.R
