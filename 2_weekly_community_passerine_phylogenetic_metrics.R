@@ -140,7 +140,7 @@ country_map <- ggplot()+
   geom_sf(data = countries) +
   coord_sf(xlim=c(-2750000, 3000000), ylim=c(-2000000, 4250000))
 
-#plot community NRI (output goes into NRI Spatiotemporal Variation (Continental Pool).gif)
+#plot community NRI (output goes into SF3 and NRI Spatiotemporal Variation (Continental Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.NRI.pdf')
 country_map +
   geom_point(data = passerine.ses.mpd.1, alpha = 0.5, aes(x = x, y = y, color = NRI)) +
@@ -174,7 +174,7 @@ for(i in 1:nrow(passerine.ses.mntd.1)){
 passerine.ses.mntd.1$NTI <- -1*passerine.ses.mntd.1$mntd.obs.z
 
 
-#plot community NTI (output goes into NTI Spatiotemporal Variation (Continental Pool).gif)
+#plot community NTI (output goes into SF3 and NTI Spatiotemporal Variation (Continental Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.NTI.pdf')
 country_map +
   geom_point(data = passerine.ses.mntd.1, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
@@ -373,7 +373,7 @@ for(i in 1:length(week1bcrlist)){
 #combine all subdivided NRI dataframes into one large dataframe
 combined_week_1_nri <- bind_rows(week1bcrlist)
 
-#plot community NRI (output goes into NRI Spatiotemporal Variation (Ecoregional Pool).gif)
+#plot community NRI (output goes into SF3 and NRI Spatiotemporal Variation (Ecoregional Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.BCR.NRI.pdf')
 country_map +
   geom_point(data = combined_week_1_nri, alpha = 0.5, aes(x = x, y = y, color = NRI)) +
@@ -447,7 +447,7 @@ for(i in 1:length(week1bcrlistNTI)){
 #combine all subdivided NTI dataframes into one large dataframe
 combined_week_1_NTI <- bind_rows(week1bcrlistNTI)
 
-#plot community NTI (output goes into NTI Spatiotemporal Variation (Ecoregional Pool).gif)
+#plot community NTI (output goes into SF3 and NTI Spatiotemporal Variation (Ecoregional Pool).gif)
 pdf(file = 'output/figures/1/passerine.1.BCR.NTI.pdf')
 country_map +
   geom_point(data = combined_week_1_NTI, alpha = 0.5, aes(x = x, y = y, color = NTI)) +
