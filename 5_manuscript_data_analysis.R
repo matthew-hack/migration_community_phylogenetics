@@ -353,12 +353,11 @@ dev.off()
 
 ##### PROCESS WEEK 1 AND WEEK 26 DATASETS FOR SEASONAL TURNOVER ANALYSES #####
 
-### GO BACK: change redo names
 #reread in NRI and NTI ecoregional data generated from weeks 1 and weeks 26
-combined_week_26_NRI <- read.csv("output/bcr_tables/26/combined_NRI_26_redo.csv")
-combined_week_26_NTI <- read.csv("output/bcr_tables/26/combined_NTI_26_redo.csv")
-combined_week_1_NRI <- read.csv("output/bcr_tables/1/combined_NRI_1_redo.csv")
-combined_week_1_NTI <- read.csv("output/bcr_tables/1/combined_NTI_1_redo.csv")
+combined_week_26_NRI <- read.csv("output/bcr_tables/26/combined_NRI_26.csv")
+combined_week_26_NTI <- read.csv("output/bcr_tables/26/combined_NTI_26.csv")
+combined_week_1_NRI <- read.csv("output/bcr_tables/1/combined_NRI_1.csv")
+combined_week_1_NTI <- read.csv("output/bcr_tables/1/combined_NTI_1.csv")
 
 #rename community column as "community" if it has been renamed as "X" (skip if not necessary)
 combined_week_1_NTI <- combined_week_1_NTI %>%
@@ -370,7 +369,6 @@ combined_week_26_NTI <- combined_week_26_NTI %>%
 combined_week_26_NRI <- combined_week_26_NRI %>%
   rename(community = X)
 
-### GO BACK: this should have been done in past steps and so therefore isn't necessary
 #load migratory proportion files for weeks 1 and 26
 migratory_proportion_df_week_1 <- read.csv("output/community_data/migratory_proportion_week_1.csv")
 migratory_proportion_df_week_26 <- read.csv("output/community_data/migratory_proportion_week_26.csv")
@@ -511,12 +509,11 @@ NTI_turnover_ratios <- read.csv("output/tables/NTI_turnover_ratios.csv", row.nam
 
 ##### CALCULATE SEASONAL TURNOVER VALUES IN PHYLOGENETIC COMMUNITY METRICS FOR CONTINENTAL COMMUNITIES #####
 
-#GO BACK: get rid of those redo values
 #reread in NRI and NTI ecoregional data generated from weeks 1 and weeks 26
 NRI_week_26_continental <- read.csv("output/tables/26/passerine.ses.mpd.26.csv")
 NTI_week_26_continental <- read.csv("output/tables/26/passerine.ses.mntd.26.csv")
-NRI_week_1_continental <- read.csv("output/tables/1/passerine.ses.mpd.1_redo.csv")
-NTI_week_1_continental <- read.csv("output/tables/1/passerine.ses.mntd.1_redo.csv")
+NRI_week_1_continental <- read.csv("output/tables/1/passerine.ses.mpd.1.csv")
+NTI_week_1_continental <- read.csv("output/tables/1/passerine.ses.mntd.1.csv")
 
 #rename community column as "community" if it has been renamed as "X" (skip if not necessary)
 NTI_week_1_continental <- NTI_week_1_continental %>%
