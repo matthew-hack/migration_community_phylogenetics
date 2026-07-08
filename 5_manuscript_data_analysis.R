@@ -643,109 +643,117 @@ NTI_turnover_ratios_continental <- read.csv("output/tables/NTI_turnover_ratios_c
 ### CONTINENTAL DATASET
 
 #plot NTI turnover vs. species richness turnover
-NTI_richness_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_continental, aes(x=richness_turnover, y=NTI_turnover)) + 
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Richness Differences (June - January)") + 
-  labs(x = "Richness Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NTI_richness_turnover_plot_continental.pdf')
-ggMarginal(NTI_richness_turnover_plot_continental, fill = "green")
+ggplot(data = NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental)),], 
+       aes(x=richness_turnover, y=NTI_turnover)) + 
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Richness Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 #plot NRI turnover vs. species richness turnover
-NRI_richness_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_continental, aes(x=richness_turnover, y=NRI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Richness Differences (June - January)") + 
-  labs(x = "Richness Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NRI_richness_turnover_plot_continental.pdf')
-ggMarginal(NRI_richness_turnover_plot_continental, fill = "green")
+ggplot(data = NRI_turnover_ratios_continental[sample(nrow(NRI_turnover_ratios_continental)),],  
+       aes(x=richness_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Richness Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 #plot NTI turnover vs. migratory proportion turnover
-NTI_mig_prop_turnover_plot_continental <- ggplot(data = NTI_turnover_ratios_continental, aes(x=mig_prop_turnover, y=NTI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Proportion Differences (June - January)") + 
-  labs(x = "Proportion Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NTI_mig_prop_turnover_plot_continental.pdf')
-ggMarginal(NTI_mig_prop_turnover_plot_continental, fill = "green")
+ggplot(data = NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_continental)),], 
+       aes(x=mig_prop_turnover, y=NTI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Proportion Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 #plot NRI turnover vs. migratory proportion turnover
-NRI_mig_prop_turnover_plot_continental <- ggplot(data = NRI_turnover_ratios_continental, aes(x=mig_prop_turnover, y=NRI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Proportion Differences (June - January)") + 
-  labs(x = "Proportion Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NRI_mig_prop_turnover_plot_continental.pdf')
-ggMarginal(NRI_mig_prop_turnover_plot_continental, fill = "green")
+ggplot(data = NRI_turnover_ratios_continental[sample(nrow(NRI_turnover_ratios_continental)),],
+       aes(x=mig_prop_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Proportion Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 ### ECOREGIONAL DATASET
 
 #plot NTI turnover vs. species richness turnover
-NTI_richness_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=richness_turnover, y=NTI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Richness Differences (June - January)") + 
-  labs(x = "Richness Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NTI_richness_turnover_plot_ecoregional.pdf')
-ggMarginal(NTI_richness_turnover_plot, fill = "green")
+ggplot(data = NTI_turnover_ratios[sample(nrow(NTI_turnover_ratios)),],
+       aes(x=richness_turnover, y=NTI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Richness Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 #plot NRI turnover vs. species richness turnover
-NRI_richness_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=richness_turnover, y=NRI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Richness Differences (June - January)") + 
-  labs(x = "Richness Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NRI_richness_turnover_plot_ecoregional.pdf')
-ggMarginal(NRI_richness_turnover_plot, fill = "green")
+ggplot(data = NRI_turnover_ratios[sample(nrow(NRI_turnover_ratios)),],
+       aes(x=richness_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Richness Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 #plot NTI turnover vs. migratory proportion turnover
-NTI_mig_prop_turnover_plot <- ggplot(data = NTI_turnover_ratios, aes(x=mig_prop_turnover, y=NTI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Proportion Differences (June - January)") + 
-  labs(x = "Proportion Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NTI_mig_prop_turnover_plot_ecoregional.pdf')
-ggMarginal(NTI_mig_prop_turnover_plot, fill = "green")
+ggplot(data = NTI_turnover_ratios[sample(nrow(NTI_turnover_ratios)),],
+       aes(x=mig_prop_turnover, y=NTI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNTI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Proportion Difference", y = "NTI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 #plot NRI turnover vs. migratory proportion turnover
-NRI_mig_prop_turnover_plot <- ggplot(data = NRI_turnover_ratios, aes(x=mig_prop_turnover, y=NRI_turnover)) +
-  geom_point(aes(color = latitude), size=4) + 
-  scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Proportion Differences (June - January)") + 
-  labs(x = "Proportion Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
-  geom_smooth(method = "lm", se=TRUE)
-
 pdf(file = 'output/figures/NRI_mig_prop_turnover_plot_ecoregional.pdf')
-ggMarginal(NRI_mig_prop_turnover_plot, fill = "green")
+ggplot(data = NRI_turnover_ratios[sample(nrow(NRI_turnover_ratios)),],
+       aes(x=mig_prop_turnover, y=NRI_turnover)) +
+  geom_point(aes(color = latitude), size=2, alpha=0.25) + 
+  scale_colour_viridis(name = "Latitude", direction = 1) + 
+  ggtitle("\nNRI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  labs(x = "Proportion Difference", y = "NRI Difference") +
+  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+        panel.background = element_rect(fill = "grey95", color = NA),
+        plot.background = element_rect(fill = "white", color = NA)) +
+  geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
 ##### TEST FOR SPATIAL AUTOCORRELATION #####
@@ -1058,8 +1066,9 @@ ggplot() +
   coord_sf(crs = crs_102004,
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
-  ggtitle("Seasonal Migratory Proportion Difference (June - January)") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  ggtitle("Seasonal Migratory Prop. Difference \n(Breeding - Nonbreeding)") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("Mig. Prop. \nDiff.",
                         midpoint = 0,
                         low = "red",
@@ -1075,8 +1084,9 @@ ggplot() +
   coord_sf(crs = crs_102004,
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
-  ggtitle("Seasonal Species Richness Difference (June - January)") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  ggtitle("Seasonal Species Richness Difference \n(Breeding - Nonbreeding)") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("Richness \nDiff.",
                         midpoint = 0,
                         low = "red",
@@ -1092,8 +1102,9 @@ ggplot() +
   coord_sf(crs = crs_102004,
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
-  ggtitle("Seasonal NRI Difference (June - January), Regional Pool") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  ggtitle("Seasonal NRI Difference \n(Breeding - Nonbreeding), Regional Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("NRI Diff.",
                         midpoint = 0,
                         low = "red",
@@ -1105,19 +1116,22 @@ dev.off()
 NRI_turnover_ratios_proj$NTI_turnover <- NTI_turnover_ratios$NTI_turnover
 
 #plot seasonal turnover in NTI (ecoregional pool)
+pdf(file = 'output/figures/NTI_turnover_ecoregional.pdf')
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_proj, aes(color = NTI_turnover), size = 0.75) +
   coord_sf(crs = crs_102004,
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
-  ggtitle("Seasonal NTI Difference (June - January), Regional Pool") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  ggtitle("Seasonal NTI Difference \n(Breeding - Nonbreeding), Regional Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("NTI Diff.",
                         midpoint = 0,
                         low = "red",
                         mid = "white",
                         high = "blue")
+dev.off()
 
 #convert continental NRI seasonal turnover data to sf format for plotting purposes
 NRI_turnover_ratios_continental_sf <- st_as_sf(NRI_turnover_ratios_continental, coords = c("longitude", "latitude"), crs = 4326)
@@ -1133,8 +1147,9 @@ ggplot() +
   coord_sf(crs = crs_102004,
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
-  ggtitle("Seasonal NRI Difference (June - January), Continental Pool") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  ggtitle("Seasonal NRI Difference \n(Breeding - Nonbreeding), Continental Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("NRI Diff.",
                         midpoint = 0,
                         low = "red",
@@ -1152,8 +1167,9 @@ ggplot() +
   coord_sf(crs = crs_102004,
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
-  ggtitle("Seasonal NTI Difference (June - January), Continental Pool") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5)) +
+  ggtitle("Seasonal NTI Difference \n(Breeding - Nonbreeding), Continental Pool") +
+  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("NTI Diff.",
                         midpoint = 0,
                         low = "red",
