@@ -172,7 +172,7 @@ ggplot(proportion_hist, aes(x=value, group=type, fill=type)) +
   xlab("Proportion Species Migratory") +
   ylab("Density") + 
   guides(fill=guide_legend(title="Season")) +
-  scale_fill_manual(values=c("red","blue")) +
+  scale_fill_manual(values=c("chartreuse1","deepskyblue")) +
   theme(legend.position = "bottom", text = element_text(size = 25))
 dev.off()
 
@@ -194,7 +194,7 @@ ggplot(nspecies_hist, aes(x=value, group=type, fill=type)) +
   xlab("Species Richness") +
   ylab("Density") + 
   guides(fill=guide_legend(title="Season")) +
-  scale_fill_manual(values=c("red","blue")) +
+  scale_fill_manual(values=c("chartreuse1","deepskyblue")) +
   theme(legend.position = "bottom", text = element_text(size = 25))
 dev.off()
 
@@ -331,6 +331,74 @@ median(na.omit(NTIlistdf$NTI)) #0.1363374
 sd(na.omit(NTIlistdf$NTI)) #0.9952832
 #proportion of NTI values that are positive
 length(na.omit(NTIlistdf$NTI[NTIlistdf$NTI > 0]))/length(na.omit(NTIlistdf$NTI)) #0.553
+
+##### GENERATE TIME SERIES FIGURE OF SPECIES RICHNESS AND MIG. PROPORTION THROUGHOUT ANNUAL CYCLE #####
+
+#isolate example communities from three geographically disjunct BCRs
+BCR_12_community_rep <- all_mig_prop_df[all_mig_prop_df$community == 7608934,]
+BCR_24_community_rep <- all_mig_prop_df[all_mig_prop_df$community == 8997188,]
+BCR_37_community_rep <- all_mig_prop_df[all_mig_prop_df$community == 10142925,]
+community_rep_data <- rbind(BCR_12_community_rep, BCR_24_community_rep, BCR_37_community_rep)
+
+#plot community time series for passerine species richness
+pdf(file = 'output/figures/species_time_series_plot.pdf')
+ggplot(community_rep_data, aes(x = .id, y = nspecies, color = factor(community), group = community)) +
+  geom_smooth(method = "loess", se = FALSE, linewidth = 1.8, span = 0.2) +
+  scale_color_manual(values = c("blue", "goldenrod", "red"), 
+                     labels = c("BCR 12", "BCR 24", "BCR 37"), name = "Community") +
+  scale_x_continuous(breaks = seq(4, 52, by = 4), limits = c(1, 52)) +
+  labs(x = "Week of Year", y = "Passerine Species Richness") + theme_classic() + 
+  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 16),
+        axis.title.y = element_text(size = 20), axis.title.x = element_text(size = 20),
+        legend.title = element_text(size = 18), legend.text = element_text(size=16))
+dev.off()
+
+#plot community time series for passerine species migratory proportion
+pdf(file = 'output/figures/proportion_time_series_plot.pdf')
+ggplot(community_rep_data, aes(x = .id, y = proportion, color = factor(community), group = community)) +
+  geom_smooth(method = "loess", se = FALSE, linewidth = 1.8, span = 0.2) +
+  scale_color_manual(values = c("blue", "goldenrod", "red"), 
+                     labels = c("BCR 12", "BCR 24", "BCR 37"), name = "Community") +
+  scale_x_continuous(breaks = seq(4, 52, by = 4), limits = c(1, 52)) +
+  labs(x = "Week of Year", y = "Passerine Species Migratory Proportion") + theme_classic() + 
+  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 16),
+        axis.title.y = element_text(size = 20), axis.title.x = element_text(size = 20),
+        legend.title = element_text(size = 18), legend.text = element_text(size=16))
+dev.off()
+
+##### GENERATE VISUAL FOR SELECTED COMMUNITIES #####
+
+#input new coordinate system for plots of North America
+crs_102004 <- "+proj=lcc +lat_1=33 +lat_2=45 +lat_0=39 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+
+#download North America continent sf file and reproject to chosen coordinate system
+na_basemap <- ne_countries(continent = "North America", returnclass = "sf")
+na_basemap_proj <- st_transform(na_basemap, crs = crs_102004)
+
+#prepare coords of three chosen communities
+point_1_coords <- as.numeric(c("1565694", "1333105"))
+point_2_coords <- as.numeric(c("913775", "104513.9"))
+point_3_coords <- as.numeric(c("371157.8", "-910639.9"))
+example_community_coords <- rbind(point_1_coords, point_2_coords, point_3_coords)
+colnames(example_community_coords) <- c("x", "y")
+rownames(example_community_coords) <- c("BCR 12", "BCR 24", "BCR 37")
+example_community_coords <- as.data.frame(example_community_coords)
+example_community_coords$color <- c("blue", "goldenrod", "red")
+
+#plot three chosen communities
+ggplot() +
+  geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
+  geom_point(data = example_community_coords, aes(x = x, y = y, color = color), size = 6, pch = 15) +
+  scale_color_identity() +
+  coord_sf(crs = crs_102004,
+           xlim = c(-3550000, 3000000),
+           ylim = c(-2200000, 3000000)) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(x = "", y = "")
 
 ##### GENERATE VISUALIZATIONS FOR SUPPLEMENTAL FIGURE 2 #####
 

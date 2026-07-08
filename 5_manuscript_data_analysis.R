@@ -1159,3 +1159,8 @@ ggplot() +
                         low = "red",
                         mid = "white",
                         high = "blue")
+
+#save
+#save.image("ebird_community_phylogenetics_data.Rdata")
+load("ebird_community_phylogenetics_data.Rdata")
+
