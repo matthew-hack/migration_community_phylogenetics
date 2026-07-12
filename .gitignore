@@ -9,6 +9,7 @@
 !raster_download.R
 !weekly_namerican_passerine_communities.R
 !weekly_namerican_passerine_communities_1_redo.R
+!6_seasonality_analysis.R
 
 # --- Keep documentation ---
 !README.md
