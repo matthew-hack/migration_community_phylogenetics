@@ -648,11 +648,11 @@ ggplot(data = NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_co
        aes(x=richness_turnover, y=NTI_turnover)) + 
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNTI vs. Richness Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Richness Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -662,11 +662,11 @@ ggplot(data = NRI_turnover_ratios_continental[sample(nrow(NRI_turnover_ratios_co
        aes(x=richness_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNRI vs. Richness Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Richness Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -676,11 +676,11 @@ ggplot(data = NTI_turnover_ratios_continental[sample(nrow(NTI_turnover_ratios_co
        aes(x=mig_prop_turnover, y=NTI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNTI vs. Proportion Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Proportion Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -690,11 +690,11 @@ ggplot(data = NRI_turnover_ratios_continental[sample(nrow(NRI_turnover_ratios_co
        aes(x=mig_prop_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNRI vs. Proportion Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Proportion Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -706,11 +706,11 @@ ggplot(data = NTI_turnover_ratios[sample(nrow(NTI_turnover_ratios)),],
        aes(x=richness_turnover, y=NTI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNTI vs. Richness Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Richness Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -720,11 +720,11 @@ ggplot(data = NRI_turnover_ratios[sample(nrow(NRI_turnover_ratios)),],
        aes(x=richness_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Richness Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNRI vs. Richness Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Richness Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -734,11 +734,11 @@ ggplot(data = NTI_turnover_ratios[sample(nrow(NTI_turnover_ratios)),],
        aes(x=mig_prop_turnover, y=NTI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNTI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNTI vs. Proportion Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Proportion Difference", y = "NTI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -748,11 +748,11 @@ ggplot(data = NRI_turnover_ratios[sample(nrow(NRI_turnover_ratios)),],
        aes(x=mig_prop_turnover, y=NRI_turnover)) +
   geom_point(aes(color = latitude), size=2, alpha=0.25) + 
   scale_colour_viridis(name = "Latitude", direction = 1) + 
-  ggtitle("\nNRI vs. Proportion Differences (Breeding - Nonbreeding)") + 
+  ggtitle("\nNRI vs. Proportion Differences \n(Breeding - Nonbreeding)") + 
   labs(x = "Proportion Difference", y = "NRI Difference") +
-  theme(text = element_text(size = 14), legend.key.size = unit(1, 'cm'),
+  theme(text = element_text(size = 17), legend.key.size = unit(1, 'cm'),
         panel.background = element_rect(fill = "grey95", color = NA),
-        plot.background = element_rect(fill = "white", color = NA)) +
+        plot.background = element_rect(fill = "white", color = NA), plot.title = element_text(hjust = 0.5)) +
   geom_smooth(method = "lm", se=TRUE, color="black", fill="gray35")
 dev.off()
 
@@ -936,7 +936,7 @@ compare_sdmTMB_models(sdmTMB_NRI_richness, sdmTMB_NRI_mig_prop, sdmTMB_NRI_mig_p
 
 ### CONTINENTAL DATASET (TABLE 1B)
 
-## ecoregional NTI
+## continental NTI
 
 #model NTI ~ richness (continental)
 mesh_continental <- make_mesh(NTI_turnover_ratios_continental, xy_cols = c("latitude", "longitude"), cutoff = 50)
@@ -1041,6 +1041,8 @@ tidy(sdmTMB_NRI_null_continental, conf.int = TRUE)
 compare_sdmTMB_models(sdmTMB_NRI_richness_continental, sdmTMB_NRI_mig_prop_continental, sdmTMB_NRI_mig_prop_richness_continental,
                       sdmTMB_NRI_mig_prop_richness_interaction_continental, sdmTMB_NRI_null_continental)
 
+##### DISPLAY EXAMPLE EFFECT SIZES FOR SPECIFIC MODELS #####
+
 
 ##### GENERATE VISUALS FOR FIGURE 3 #####
 
@@ -1141,6 +1143,7 @@ NRI_turnover_ratios_continental_proj <- NRI_turnover_ratios_continental_proj %>%
          Y = st_coordinates(.)[,2])
 
 #plot seasonal turnover in NRI (continental pool)
+pdf(file = 'output/figures/NRI_turnover_continental.pdf')
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_continental_proj, aes(color = NRI_turnover), size = 0.75) +
@@ -1148,19 +1151,21 @@ ggplot() +
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
   ggtitle("Seasonal NRI Difference \n(Breeding - Nonbreeding), Continental Pool") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+  theme(text = element_text(size = 19), legend.title = element_text(hjust = 0.5),
         plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("NRI Diff.",
                         midpoint = 0,
                         low = "red",
                         mid = "white",
                         high = "blue")
+dev.off()
 
 
 #add NTI turnover data to same dataframe
 NRI_turnover_ratios_continental_proj$NTI_turnover <- NTI_turnover_ratios_continental$NTI_turnover
 
 #plot seasonal turnover in NTI (continental pool)
+pdf(file = 'output/figures/NTI_turnover_continental.pdf')
 ggplot() +
   geom_sf(data = na_basemap_proj, fill = "gray95", color = "gray60") +
   geom_sf(data = NRI_turnover_ratios_continental_proj, aes(color = NTI_turnover), size = 0.75) +
@@ -1168,13 +1173,14 @@ ggplot() +
            xlim = c(-3550000, 3000000),
            ylim = c(-2200000, 3000000)) +
   ggtitle("Seasonal NTI Difference \n(Breeding - Nonbreeding), Continental Pool") +
-  theme(text = element_text(size = 20), legend.title = element_text(hjust = 0.5),
+  theme(text = element_text(size = 19), legend.title = element_text(hjust = 0.5),
         plot.title = element_text(hjust = 0.5)) +
   scale_color_gradient2("NTI Diff.",
                         midpoint = 0,
                         low = "red",
                         mid = "white",
                         high = "blue")
+dev.off()
 
 #save
 #save.image("ebird_community_phylogenetics_data.Rdata")
