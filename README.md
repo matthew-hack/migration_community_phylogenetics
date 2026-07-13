@@ -1,7 +1,7 @@
 # Migration community phylogenetics
 Pipeline for data generation and analysis of community phylogenetics of migration, using eBird Status and Trends data.
 
-There are five scripts associated with this text:
+There are six scripts associated with this text:
 
 -- 1_SDM_download_and_community_formation.R <br />
 This script accesses the eBird Status and Trends data package in order to download the eBird Status and Trends data for each species included in the dataset. The script proceeds to partition the eBirdst data into weekly distributional rasters, which are then aggregated into community matrices for each week of the year depicting the abundance of each individual species.
@@ -18,4 +18,5 @@ This script generates the values used in the Results section of the manuscript, 
 -- 5_manuscript_data_analysis.R <br />
 This script processes seasonal turnover (from winter to summer) in community phylogenetic metrics, along with species richness and migratory proportion, across both species pool levels. Spatial GLMMs are carried out to analyze the seasonality of community phylogenetic metrics through space, and to model seasonal turnover in community phylogenetic metrics against other factors. The script also analyzes the phylogenetic distance of NRI and NTI values within summer and winter (SF1) and generates figures depicting seasonal turnover in phylogenetic community metrics.
 
-
+-- 6_seasonality_analysis.R <br />
+This script downloads and analyzes bioclimatic variables, and tests the influence of annual temperature range and seasonality in shaping seasonal variation in community phylogenetic metrics.
