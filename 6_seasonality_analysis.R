@@ -70,7 +70,9 @@ sdmTMB_NRI_turnover_seasonality <- sdmTMB(
   mesh = mesh,
   spatial = "on"
 )
-tidy(sdmTMB_NRI_turnover_seasonality, conf.int = TRUE) #while significant, extremely minor slope
+tidy(sdmTMB_NRI_turnover_seasonality, conf.int = TRUE) 
+#significant (if shallow-sloped) negative association between BIO4 and absolute value of NRI turnover
+#greater seasonality = greater variation in NRI
 
 #plot NTI turnover vs. temperature seasonality (ecoregional) (NTI turnover)
 NTI_turnover_seasonality_plot <- ggplot(data = NTI_turnover_ratios, aes(x=bio4, y=NTI_turnover)) +
@@ -82,12 +84,13 @@ NTI_turnover_seasonality_plot <- ggplot(data = NTI_turnover_ratios, aes(x=bio4, 
   geom_smooth(method = "lm", se=TRUE) 
 
 sdmTMB_NTI_turnover_seasonality <- sdmTMB(
-  formula = NTI_turnover ~ bio4,
+  formula = abs(NTI_turnover) ~ bio4,
   data = NTI_turnover_ratios,
   mesh = mesh,
   spatial = "on"
 )
-tidy(sdmTMB_NTI_turnover_seasonality, conf.int = TRUE) #more strongly significant negative relationship
+tidy(sdmTMB_NTI_turnover_seasonality, conf.int = TRUE) 
+#no significant relationship between BIO4 and absolute value of NTI turnover
 
 ### test again with annual temperature range
 #plot NRI turnover vs. annual temperature range (ecoregional) (absolute value of NRI turnover)
@@ -100,12 +103,13 @@ NRI_turnover_temp_range_plot <- ggplot(data = NRI_turnover_ratios, aes(x=bio7, y
   geom_smooth(method = "lm", se=TRUE) 
 
 sdmTMB_NRI_turnover_temp_range <- sdmTMB(
-  formula = abs(NRI_turnover) ~ bio4,
+  formula = abs(NRI_turnover) ~ bio7,
   data = NRI_turnover_ratios,
   mesh = mesh,
   spatial = "on"
 )
-tidy(sdmTMB_NRI_turnover_temp_range, conf.int = TRUE) #significant positive slope 
+tidy(sdmTMB_NRI_turnover_temp_range, conf.int = TRUE) 
+#significant positive relationship between BIO7 and absolute value of NRI turnover 
 #greater interannual temperature range = greater variation in NRI
 
 #plot NTI turnover vs. temperature temp_range (ecoregional) (NTI turnover)
@@ -118,12 +122,13 @@ NTI_turnover_temp_range_plot <- ggplot(data = NTI_turnover_ratios, aes(x=bio4, y
   geom_smooth(method = "lm", se=TRUE) 
 
 sdmTMB_NTI_turnover_temp_range <- sdmTMB(
-  formula = NTI_turnover ~ bio4,
+  formula = abs(NTI_turnover) ~ bio7,
   data = NTI_turnover_ratios,
   mesh = mesh,
   spatial = "on"
 )
-tidy(sdmTMB_NTI_turnover_temp_range, conf.int = TRUE) #more strongly significant negative relationship
+tidy(sdmTMB_NTI_turnover_temp_range, conf.int = TRUE) 
+#slightly negative relationship between BIO7 and absolute value of NTI turnover
 
 #linear models to assess
 NRI_seasonality_lm <- lm(abs(NRI_turnover) ~ abs(richness_turnover)*bio4, data=NRI_turnover_ratios)
