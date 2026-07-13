@@ -1043,6 +1043,55 @@ compare_sdmTMB_models(sdmTMB_NRI_richness_continental, sdmTMB_NRI_mig_prop_conti
 
 ##### DISPLAY EXAMPLE EFFECT SIZES FOR SPECIFIC MODELS #####
 
+### NRI models (ecological)
+#influence of species richness on NRI
+sdmTMB_NRI_richness_tibble <- tidy(sdmTMB_NRI_richness, conf.int = TRUE)
+#extract coefficient
+NRI_richness_coef_slope <- sdmTMB_NRI_richness_tibble$estimate[2] #0.0124
+NRI_richness_coef_intercept <- sdmTMB_NRI_richness_tibble$estimate[1] #-0.490
+#calculate NRI turnover IQR boundaries
+richness_turnover_IQR <- quantile(NRI_turnover_ratios$richness_turnover, c(.25, .75), na.rm=TRUE) #4-33
+#richness turnover (25th percentile)
+NRI_richness_coef_intercept+NRI_richness_coef_slope*richness_turnover_IQR[1] #-0.441
+#richness turnover (75th percentile)
+NRI_richness_coef_intercept+NRI_richness_coef_slope*richness_turnover_IQR[2] #-0.082
+
+#influence of migratory proportion on NRI
+sdmTMB_NRI_mig_prop_tibble <- tidy(sdmTMB_NRI_mig_prop, conf.int = TRUE)
+#extract coefficient
+NRI_mig_prop_coef_slope <- sdmTMB_NRI_mig_prop_tibble$estimate[2] #1.714
+NRI_mig_prop_coef_intercept <- sdmTMB_NRI_mig_prop_tibble$estimate[1] #-0.463
+#calculate NRI turnover IQR boundaries
+mig_prop_turnover_IQR <- quantile(NRI_turnover_ratios$mig_prop_turnover, c(.25, .75), na.rm=TRUE) #0.008-0.253
+#mig_prop turnover (25th percentile)
+NRI_mig_prop_coef_intercept+NRI_mig_prop_coef_slope*mig_prop_turnover_IQR[1] #-0.448
+#mig_prop turnover (75th percentile)
+NRI_mig_prop_coef_intercept+NRI_mig_prop_coef_slope*mig_prop_turnover_IQR[2] #-0.028
+
+#influence of species richness on NTI
+sdmTMB_NTI_richness_tibble <- tidy(sdmTMB_NTI_richness, conf.int = TRUE)
+#extract coefficient
+NTI_richness_coef_slope <- sdmTMB_NTI_richness_tibble$estimate[2] #-0.0212
+NTI_richness_coef_intercept <- sdmTMB_NTI_richness_tibble$estimate[1] #0.247
+#calculate NTI turnover IQR boundaries
+richness_turnover_IQR <- quantile(NTI_turnover_ratios$richness_turnover, c(.25, .75), na.rm=TRUE) #4-33
+#richness turnover (25th percentile)
+NTI_richness_coef_intercept+NTI_richness_coef_slope*richness_turnover_IQR[1] #0.162
+#richness turnover (75th percentile)
+NTI_richness_coef_intercept+NTI_richness_coef_slope*richness_turnover_IQR[2] #-0.454
+
+#influence of migratory proportion on NTI
+sdmTMB_NTI_mig_prop_tibble <- tidy(sdmTMB_NTI_mig_prop, conf.int = TRUE)
+#extract coefficient
+NTI_mig_prop_coef_slope <- sdmTMB_NTI_mig_prop_tibble$estimate[2] #-1.391
+NTI_mig_prop_coef_intercept <- sdmTMB_NTI_mig_prop_tibble$estimate[1] #0.0710
+#calculate NTI turnover IQR boundaries
+mig_prop_turnover_IQR <- quantile(NTI_turnover_ratios$mig_prop_turnover, c(.25, .75), na.rm=TRUE) #0.008-0.253
+#mig_prop turnover (25th percentile)
+NTI_mig_prop_coef_intercept+NTI_mig_prop_coef_slope*mig_prop_turnover_IQR[1] #0.0596
+#mig_prop turnover (75th percentile)
+NTI_mig_prop_coef_intercept+NTI_mig_prop_coef_slope*mig_prop_turnover_IQR[2] #-0.281
+
 
 ##### GENERATE VISUALS FOR FIGURE 3 #####
 
@@ -1185,4 +1234,3 @@ dev.off()
 #save
 #save.image("ebird_community_phylogenetics_data.Rdata")
 load("ebird_community_phylogenetics_data.Rdata")
-
