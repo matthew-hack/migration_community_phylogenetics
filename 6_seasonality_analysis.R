@@ -130,29 +130,12 @@ sdmTMB_NTI_turnover_temp_range <- sdmTMB(
 tidy(sdmTMB_NTI_turnover_temp_range, conf.int = TRUE) 
 #slightly negative relationship between BIO7 and absolute value of NTI turnover
 
-#linear models to assess
-NRI_seasonality_lm <- lm(abs(NRI_turnover) ~ abs(richness_turnover)*bio4, data=NRI_turnover_ratios)
-summary(NRI_seasonality_lm) #greater turnover in species richness and more seasonality predict greater magnitude of NRI turnover 
+#another approach (simple univariate linear models): absolute value of NRI and NTI turnover metrics
+summary(lm(abs(NRI_turnover) ~ bio4, data=NRI_turnover_ratios)) #positive, p=0.0129, estimate = 0.0000492
+summary(lm(abs(NTI_turnover) ~ bio4, data=NTI_turnover_ratios)) #insignificant, estimate = -0.0000205
+summary(lm(abs(NRI_turnover) ~ bio7, data=NRI_turnover_ratios)) #positive, p<2e-16, estimate = 0.0062
+summary(lm(abs(NTI_turnover) ~ bio7, data=NTI_turnover_ratios)) #negative, p=1.42e-13, estimate = -0.0053
 
-NTI_seasonality_lm <- lm(abs(NTI_turnover) ~ abs(richness_turnover)*bio4, data=NTI_turnover_ratios)
-summary(NTI_seasonality_lm) #greater turnover in species richness and more seasonality predicts lower magnitude of NTI turnover
-
-NRI_temp_range_lm <- lm(abs(NRI_turnover) ~ abs(richness_turnover)*bio7, data=NRI_turnover_ratios)
-summary(NRI_temp_range_lm) #greater turnover in species richness and more temp_range predict greater magnitude of NRI turnover 
-
-NTI_temp_range_lm <- lm(abs(NTI_turnover) ~ abs(richness_turnover)*bio7, data=NTI_turnover_ratios)
-summary(NTI_temp_range_lm) #greater turnover in species richness and more temp_range predicts lower magnitude of NTI turnover
-
-summary(lm(abs(NRI_turnover) ~ bio4, data=NRI_turnover_ratios)) #positive, p=0.0129
-summary(lm(abs(NTI_turnover) ~ bio4, data=NTI_turnover_ratios)) #insignifcant
-summary(lm(abs(NRI_turnover) ~ bio7, data=NRI_turnover_ratios)) #positive, p<2e-16
-summary(lm(abs(NTI_turnover) ~ bio7, data=NTI_turnover_ratios)) #negative, p=-0.0053
-
-summary(lm(NRI_turnover ~ bio4, data=NRI_turnover_ratios)) #positive, p=2.93e-7
-summary(lm(NTI_turnover ~ bio4, data=NTI_turnover_ratios)) #negative, p=2e-16
-summary(lm(NRI_turnover ~ bio7, data=NRI_turnover_ratios)) #insignificant
-summary(lm(NTI_turnover ~ bio7, data=NTI_turnover_ratios)) #negative, p=2e-16
-
-#this helps us out with NRI/phylogenetic clustering mechanism --
+#these results help clarify the NRI/phylogenetic clustering mechanism --
 #greater degree of seasonality is allowing for greater magnitude of NRI, which is a larger restructuring 
 
