@@ -1,3 +1,9 @@
+# 6. Seasonality analysis
+# Downloads and analyzes bioclimatic variables
+# Tests the influence of annual temperature range and seasonality in shaping 
+# seasonal variation in community phylogenetic metrics.
+
+
 #load required libraries
 required.libraries <- c("ebirdst","terra","sf","dplyr","rnaturalearth",
                         "ape","picante","vegan","ecospat","EcoSimR","betapart",
@@ -64,12 +70,14 @@ NRI_turnover_seasonality_plot <- ggplot(data = NRI_turnover_ratios, aes(x=bio4, 
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE) 
 
+#analyze influence of temperature seasonality (BIO4) on NRI turnover
 sdmTMB_NRI_turnover_seasonality <- sdmTMB(
   formula = abs(NRI_turnover) ~ bio4,
   data = NRI_turnover_ratios,
   mesh = mesh,
   spatial = "on"
 )
+
 tidy(sdmTMB_NRI_turnover_seasonality, conf.int = TRUE) 
 #significant (if shallow-sloped) negative association between BIO4 and absolute value of NRI turnover
 #greater seasonality = greater variation in NRI
@@ -83,6 +91,7 @@ NTI_turnover_seasonality_plot <- ggplot(data = NTI_turnover_ratios, aes(x=bio4, 
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE) 
 
+#analyze influence of temperature seasonality (BIO4) on NTI turnover
 sdmTMB_NTI_turnover_seasonality <- sdmTMB(
   formula = abs(NTI_turnover) ~ bio4,
   data = NTI_turnover_ratios,
@@ -92,7 +101,7 @@ sdmTMB_NTI_turnover_seasonality <- sdmTMB(
 tidy(sdmTMB_NTI_turnover_seasonality, conf.int = TRUE) 
 #no significant relationship between BIO4 and absolute value of NTI turnover
 
-### test again with annual temperature range
+### test again with annual temperature range (BIO7)
 #plot NRI turnover vs. annual temperature range (ecoregional) (absolute value of NRI turnover)
 NRI_turnover_temp_range_plot <- ggplot(data = NRI_turnover_ratios, aes(x=bio7, y=abs(NRI_turnover))) +
   geom_point(aes(color = latitude), size=4) + 
@@ -102,12 +111,14 @@ NRI_turnover_temp_range_plot <- ggplot(data = NRI_turnover_ratios, aes(x=bio7, y
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE) 
 
+#analyze influence of annual temperature range (BIO7) on NRI turnover
 sdmTMB_NRI_turnover_temp_range <- sdmTMB(
   formula = abs(NRI_turnover) ~ bio7,
   data = NRI_turnover_ratios,
   mesh = mesh,
   spatial = "on"
 )
+
 tidy(sdmTMB_NRI_turnover_temp_range, conf.int = TRUE) 
 #significant positive relationship between BIO7 and absolute value of NRI turnover 
 #greater interannual temperature range = greater variation in NRI
@@ -121,12 +132,14 @@ NTI_turnover_temp_range_plot <- ggplot(data = NTI_turnover_ratios, aes(x=bio4, y
   theme(text = element_text(size = 20), legend.key.size = unit(1, 'cm')) +
   geom_smooth(method = "lm", se=TRUE) 
 
+#analyze influence of annual temperature range (BIO7) on NTI turnover
 sdmTMB_NTI_turnover_temp_range <- sdmTMB(
   formula = abs(NTI_turnover) ~ bio7,
   data = NTI_turnover_ratios,
   mesh = mesh,
   spatial = "on"
 )
+
 tidy(sdmTMB_NTI_turnover_temp_range, conf.int = TRUE) 
 #slightly negative relationship between BIO7 and absolute value of NTI turnover
 
@@ -138,4 +151,3 @@ summary(lm(abs(NTI_turnover) ~ bio7, data=NTI_turnover_ratios)) #negative, p=1.4
 
 #these results help clarify the NRI/phylogenetic clustering mechanism --
 #greater degree of seasonality is allowing for greater magnitude of NRI, which is a larger restructuring 
-

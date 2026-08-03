@@ -921,7 +921,7 @@ sdmTMB_NRI_mig_prop_richness_interaction <- sdmTMB(
 )
 tidy(sdmTMB_NRI_mig_prop_richness_interaction, conf.int = TRUE)
 
-#null model (spatial structure only -- NTI ecoregional)
+#null model (spatial structure only -- NRI ecoregional)
 sdmTMB_NRI_null <- sdmTMB(
   formula = NRI_turnover ~ 1,
   data = NRI_turnover_ratios,
